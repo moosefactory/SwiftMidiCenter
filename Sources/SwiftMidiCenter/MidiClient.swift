@@ -16,10 +16,10 @@ public typealias MidiEventsReadBlock = (UnsafePointer<MIDIPacketList>, [MidiEven
 public typealias TransposeReadBlock = (Int, Int, UnsafeMutableRawPointer?)->Void
 
 /// Pass timestamp, channel, and connection reference
-public typealias ClockReadBlock = (Int, Int, UnsafeMutableRawPointer?)->Void
+public typealias ClockReadBlock = (ClockSignal, UnsafeMutableRawPointer?)->Void
 
 public class MidiClient: ObservableObject {
-        
+    
     /// The CoreMidi client refcon
     public private(set) var ref: MIDIClientRef = 0
     
@@ -27,21 +27,35 @@ public class MidiClient: ObservableObject {
     public private(set) var identifier: String
     
     /// The opened input ports
-    @Published public private(set) var inputPorts = [InputPort]()
+    public lazy var inputPort: InputPort = {
+        do {
+            return try openInputPortWithPacketsReader(name: "in", type: .packets, readBlock: receive)
+        } catch {
+            fatalError("\(error)")
+        }
+    }()
     
-    /// The opened output ports
-    public private(set) var outputPorts = [OutputPort]()
-
+    public lazy var outputPort: OutputPort = {
+        do {
+            return try OutputPort(client: self, name: "mainOut")
+        } catch {
+            fatalError("\(error)")
+        }
+    }()
+    
+    /// The midi outlet to outlet connections
+    public internal(set) var connections = [MidiConnection]()
+    
     // MARK: Debug options
     
     #if DEBUG
-
+    
     /// Log Notifications
     var logNotifications: Bool = true
     
     /// Log MidiEvents
     var logEvents: Bool = true
-
+    
     #endif
     
     /// A weak reference to the MidiCenter, to update the midi patch bay when setup is changed,
@@ -53,8 +67,14 @@ public class MidiClient: ObservableObject {
     public init(midiCenter: MidiCenter, name: String) throws {
         self.midiCenter = midiCenter
         self.identifier = "\(midiCenter.identifier).\(name)"
+        
         self.ref = try SwiftMIDI.createClient(name: identifier, with: notifyBlock)
-        try openOutputPort()
+        
+        inputPort = try openInputPortWithPacketsReader(name: "in", type: .packets) { packets, refCon in
+            
+        }
+        outputPort = try OutputPort(client: self, name: "out")
+        
     }
     
     public func openDefaultPorts() throws {
@@ -62,10 +82,16 @@ public class MidiClient: ObservableObject {
         try openOutputPort()
     }
     
+    // MIDI Packets handling
+    
+    func receive(packets: UnsafePointer<MIDIPacketList>, refCon: UnsafeMutableRawPointer?) {
+        
+    }
+    
     // MARK: - Notifications handling
     
     private func notifyBlock(_ notificationPointer: UnsafePointer<MIDINotification>) {
-        let notification = SwiftMIDI.Notification.make(with: notificationPointer)
+        guard let notification = SwiftMIDI.Notification.make(with: notificationPointer) else { return }
         if logEvents {
             self.log(notification: notification)
         }
@@ -89,166 +115,86 @@ public class MidiClient: ObservableObject {
         }
     }
     
-    // MARK: - Output Midi Ports
-    
-    var mainOut: OutputPort? {
-        guard !outputPorts.isEmpty else { return nil }
-        return outputPorts[0]
-    }
+    // MARK: - Output Midi Port
     
     public func openOutputPort(name: String = "mainOut") throws {
-        let outputPort = try OutputPort(client: self, name: name)
-        outputPorts.append(outputPort)
+        outputPort = try OutputPort(client: self, name: name)
     }
     
     // MARK: - Input Midi Ports
     
-    /// The default midi packets port
-    ///
-    /// We use this port in case we don't want events conversion, to avoid overhead.
-    /// It is used for fast midiThru connections.
-    
-    var mainIn: InputPort? {
-        guard !inputPorts.isEmpty else { return nil }
-        return inputPorts[0]
+    public func newConnection(with info: NewConnectionInfo) throws {
+        try createConnection(port: inputPort, type: info.connectionType, name: info.name)
     }
-
-    public func openInputPortWithPacketsReader(name: String = "mainIn", type: InputPortType, readBlock: @escaping MIDIReadBlock) throws -> InputPort {
-        guard inputPorts.first(where: { $0.identifier == identifier }) == nil else {
-            throw MidiCenter.Errors.inputPortWithSameIdentifierAlreadyExists
+    
+    public func openInputPortWithPacketsReader(name: String = "mainIn", type: ConnectionType, readBlock: @escaping MIDIReadBlock) throws -> InputPort {
+        
+        let inputPort = try InputPort(client: self, type: type , name: name) { packetList, refCon in
+            guard let cnxRefCon = refCon?.assumingMemoryBound(to: RefCon.self).pointee else {
+                return
+            }
+            guard let port = cnxRefCon.port else { return }
+            
+            self.connections.forEach { connection in
+                // Only transfer if outlet is set in the connection
+                if connection.sources.contains(cnxRefCon.outlet) {
+                    connection.transfer(packetList: packetList)
+                }
+            }
+            readBlock(packetList, refCon)
         }
-        let inputPort = try InputPort(client: self, type: type , name: name, readBlock: readBlock)
-        inputPorts = inputPorts + [inputPort]
         return inputPort
     }
     
-    /// The default midi events port
-    ///
-    /// We use this port when we want to unpack midi events from packets list.
-    var mainInEventsPort: InputPort? {
-        guard inputPorts.count > 1 else { return nil }
-        return inputPorts[1]
-    }
-
-    public func openInputPortWithEventsReader(name: String = "mainIn.unpack", midiEventsBlock: @escaping MidiEventsReadBlock) throws -> InputPort {
-        return try openInputPortWithPacketsReader(name: name, type: .events) { packetList, connectionRefCon in
-            
-            guard let refCon = connectionRefCon?.assumingMemoryBound(to: RefCon.self).pointee else {
-                return
-            }
-
-            // Only during dev, to avoid crash when interrupting the app
-            guard (packetList.pointee.packet.data.0 & 0xF0) != 0xF0 else { return }
-            
-            MidiPacketInterceptor.unpackEvents(packetList) { events in
-            
-                // We are still in the MidiPacketInterceptor thread at this time
-                midiEventsBlock(packetList, events, connectionRefCon)
-                
-                #if DEBUG
-                // Log events of all types excepted clock
-                if self.logEvents {
-                    DispatchQueue.main.async {
-                        let eventsToLog = events.filter({$0.type != .clock})
-                        if !eventsToLog.isEmpty {
-                            print("\(refCon.identifier) ---> ")
-                            eventsToLog.forEach {
-                                print($0)
-                            }
-                        }
-                    }
-                }
-                #endif
-            }
-        }
-    }
-    
-    // MARK: -
-    
-    /// Creates a new events input port
-    ///
-    /// Events input port as a little overhead since they unpack the midi packets to get the events.
-    func newEventsInputPort(block: @escaping MidiEventsReadBlock) throws  -> InputPort{
-        return try openInputPortWithEventsReader(midiEventsBlock: block)
-        //midiClient.objectWillChange().send()
-    }
-    
-    /// Creates a new midi thru input port
-    ///
-    /// Midi thru input port simply takes packets and forward them to a destination, without unpacking.
-    /// That fits well to play live with a keyboard
-    
-    func newThruInputPort(block: @escaping MIDIReadBlock) throws  -> InputPort{
-        return try openInputPortWithPacketsReader(type: .packets, readBlock: block)
-    }
-    
-    // TODO: newTransposePort, newControlPort and newClockPort
-    
-    /// Creates a new midi transpose input port
-    ///
-    /// Midi transpose input port simply takes packets and only extract the note number and channels
-    /// That fits well if the client app has a live Transpose feature
-    
-    func newTransposeInputPort(block: @escaping (TransposeReadBlock)) throws {
-        //try openInputPortWithPacketsReader(type: .transpose, readBlock: block)
-    }
-
-    /// Creates a new midi clock input port
-    ///
-    /// Midi clock input port simply takes clock signal and forward it to a destination
-    /// Use this to synchronize app with external clock
-    
-    func newClockInputPort(block: @escaping ClockReadBlock) throws {
-       /// try openInputPortWithPacketsReader(type: .events, readBlock: block)
-    }
-
-    /// Creates a new midi events input port
-    ///
-    /// Midi controls input port filters all events that are not controls
-    
-    func newControlsInputPort(block: @escaping MidiEventsReadBlock) throws {
-       /// try openInputPortWithPacketsReader(type: .events, readBlock: block)
-    }
-
-
     // MARK: - Connections
     
+    func createConnection(port: InputPort, type: ConnectionType, name: String) throws {
+        var ct = MidiEventTypeMask.all
+        switch type {
+        case .packets:
+            ct = .all
+        case .events:
+            ct = .allExceptedClock
+        case .clock:
+            ct = .clock
+        case .transpose:
+            ct = .note
+        case .controls:
+            ct = .control
+        }
+        
+        var filter = MidiPacketsFilter(channels: .all, eventTypes: ct)
+
+        let connection = MidiConnection(name: name, filter: filter,
+                                        inputPort: port, outputPort: outputPort,
+                                        sources: [], destinations: [])
+        connection.inputOutletsDidChange = { changes in
+            self.usedInputsDidChange(changes: changes)
+        }
+        connection.outputOutletsDidChange = { connection in
+            //self.client.connectionDidChange(connection: connection)
+        }
+        addConnection(connection, in: port)
+    }
+    
+    /// Adds a connection from outlet to outlet in the given port
+    
     func addConnection(_ connection: MidiConnection, in port: InputPort) {
-        // Whould work with other inputs
-        guard let mainIn = mainIn else { return }
         connection.sources.forEach {
             try? port.connect(identifier: connection.uuid.uuidString, outlet: $0)
         }
+        connections.append(connection)
+        objectWillChange.send()
     }
     
     func usedInputsDidChange(changes: MidiWireChangeParams<MidiConnection>) {
         
-
-        if let mainIn = mainInEventsPort {
-            changes.addedInputOutlets.forEach {
-                try? mainIn.connect(identifier: changes.wire.uuid.uuidString, outlet: $0)
-            }
-            changes.removedInputOutlets.forEach {
-                
-                // TODO: Count connections using the disconnected outlets, if none unplug
-                
-                // For this, connections must be moved from center to client
-                
-        //        var count = 0
-        //        connections.forEach { if ($0.outlet == outlet) { count += 1 } }
-        //        // If there is no more connection using this outlet, we unplug it
-        //        if count == 0 {
-        //            try SwiftMIDI.disconnect(source: outlet.ref, from: ref)
-        //        }
-
-                try? mainIn.disconnect(outlet: $0)
-            }
+        changes.addedInputOutlets.forEach {
+            try? inputPort.connect(identifier: changes.wire.uuid.uuidString, outlet: $0)
         }
-//        if let mainOut = mainOut {
-//            connection.destinations.forEach {
-//                try? mainOut.connect(outlet: $0)
-//            }
-//        }
+        changes.removedInputOutlets.forEach {
+            try? inputPort.disconnect(outlet: $0)
+        }
     }
 }
 
@@ -259,7 +205,7 @@ extension MidiClient: CustomStringConvertible {
     
     public var description: String {
         var out = ["Midi Client '\(identifier)'"]
-        out += inputPorts.map { "    " + $0.description }
+        out += [inputPort.description]
         return out.joined(separator: "\r")
     }
 }
@@ -270,7 +216,7 @@ extension MidiClient: CustomStringConvertible {
 extension MidiClient {
     
     public static let test = try! MidiClient(midiCenter: MidiCenter.shared, name: "Test Client")
-    private func log(notification: AnySwiftMIDINotification) {
+    private func log(notification: SwiftMIDINotification) {
         print(notification.description.replacingOccurrences(of: ";", with: "\r    "))
         if notification is SwiftMIDI.Notification.SetUpChanged {
             print("---------- Setup Did Change ------------")

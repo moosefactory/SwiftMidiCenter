@@ -9,7 +9,7 @@ import Foundation
 import CoreMIDI
 import SwiftMIDI
 
-public class MidiPort: MidiObject, ObservableObject {
+public class MidiPort: MidiObject, ObservableObject, Identifiable {
     
     /// The CoreMidi port refCon
     public internal(set) var ref: MIDIPortRef = 0

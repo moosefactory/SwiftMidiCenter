@@ -9,12 +9,29 @@ import Foundation
 import CoreMIDI
 import SwiftMIDI
 
-public enum InputPortType {
+public enum ConnectionType: Int, Codable, CaseIterable {
     case packets
     case events
     case clock
     case transpose
     case controls
+    
+    public var string: String {
+        switch self {
+        case .packets:
+            return "Packets"
+        case .events:
+            return "Events"
+        case .clock:
+            return "Clock"
+        case .transpose:
+            return "Transpose"
+        case .controls:
+            return "Controls"
+        }
+    }
+    
+    public static var allStrings: [String] { ConnectionType.allCases.map {$0.string }}
 }
 
 public class InputPort: MidiPort {
@@ -24,12 +41,22 @@ public class InputPort: MidiPort {
     /// There can be as many connections as there is input sources
     public var inputConnections = [InputPortConnection]()
 
-    public private(set) var type: InputPortType
+    public private(set) var type: ConnectionType
 
+    public var filterClock: Bool = true
+    
+    public var channelFilter: PacketsProcessBlock?
+    
+    public var noteFilter: PacketsProcessBlock?
+    
+    public var mapChannel: PacketsProcessBlock?
+    
+    public var transposer: PacketsProcessBlock?
+    
     /// The MIDIReadBlock closure ( Deprecated - need to switch to MidiEvent API )
     private var readBlock: MIDIReadBlock
     
-    internal init(client: MidiClient, type: InputPortType, name: String = "input", readBlock: @escaping MIDIReadBlock) throws {
+    internal init(client: MidiClient, type: ConnectionType, name: String = "input", readBlock: @escaping MIDIReadBlock) throws {
         self.readBlock = readBlock
         self.type = type
         try super.init(client: client, name: name)
@@ -48,7 +75,7 @@ public class InputPort: MidiPort {
                                             portName: identifier,
                                             readBlock: readBlock)
     }
-    
+
     /// Plug the port on an outlet
     ///
     /// An outlet can be connected once to an input port.
@@ -59,6 +86,7 @@ public class InputPort: MidiPort {
         }
         let input = try InputPortConnection(identifier: identifier, port: self, source: outlet)
         inputConnections.append(input)
+        objectWillChange.send()
     }
     
     
@@ -70,6 +98,7 @@ public class InputPort: MidiPort {
         }
         try inputConnections[connectionIndex].close()
         inputConnections.remove(at: connectionIndex)
+        objectWillChange.send()
     }
 }
 
@@ -85,9 +114,7 @@ extension InputPort: CustomStringConvertible {
 public extension InputPort {
     
     static let test: InputPort = {
-        return try! (MidiClient.test.openInputPortWithEventsReader(name: "Test Input Port", midiEventsBlock: { packets, events, refCon in
-            print("Test Input Port")
-        }))
+        return MidiClient.test.inputPort
     }()
 }
     

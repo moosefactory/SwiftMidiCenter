@@ -121,11 +121,6 @@ public final class MidiThru: Codable, ObservableObject, MidiWire, Identifiable {
         }
 
         try SwiftMIDI.setMidiThruConnectionParams(connectionRef: connectionRef!, params: params)
-        
-        // DIRTY HACK-To Move in MidiConnectionedition
-        //
-        
-        MidiCenter.shared.updateConnection(coreThruUUID: self.uuid, sources: sources, destinations: destinations)
     }
 }
 

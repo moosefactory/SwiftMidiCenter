@@ -9,7 +9,9 @@ import Foundation
 import CoreMIDI
 import SwiftMIDI
 
-public struct RefCon: Codable {
+public struct RefCon {
+    weak var port: InputPort?
+
     /// The connection identifier
     var connectionIdentifier: String
     /// The CoreMIDI Source that sends data
@@ -37,7 +39,7 @@ public class InputPortConnection {
     init(identifier: String, port: InputPort, source: MidiOutlet) throws {
         self.port = port
         self.outlet = source
-        self.refCon = RefCon(connectionIdentifier: identifier, outlet: source)
+        self.refCon = RefCon(port: port, connectionIdentifier: identifier, outlet: source)
         try open()
     }
     
