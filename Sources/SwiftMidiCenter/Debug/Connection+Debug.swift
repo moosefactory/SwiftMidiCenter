@@ -25,62 +25,53 @@
  THE SOFTWARE. */
 /*--------------------------------------------------------------------------*/
 
-//  MidiBay.swift
-//  Created by Tristan Leblanc on 28/12/2020.
+//  MidiConnection.swift
+//  Created by Tristan Leblanc on 09/01/2021.
 
 import Foundation
-import CoreMIDI
+import SwiftMIDI
 
-/// MidiBay
-///
-/// MidiBay is a patch abstraction to represent and store midi endpoints
+#if DEBUG
 
-public class MidiBay: ObservableObject {
+public extension MidiConnection {
     
-    @Published public var outlets = [MidiOutlet]()
-    
-    public init(outlets: [MidiOutlet] = []) {
-        self.outlets = outlets
-    }
-    
-    public func outlet(for name: String) -> MidiOutlet? {
-        return outlets.first { $0.name == name }
-    }
-    
-    public func forEachOutlet(_ closure: (MidiOutlet)->Void) {
-        outlets.forEach { closure($0) }
-    }
-    
-    public func connectAllOutlets(to port: InputPort) {
-        forEachOutlet { outlet in
-            do {
-                try port.connect(identifier: "cnx", outlet: outlet)
-            } catch {
-                print(error)
+    func debugLog(filterOutput: MidiPacketsFilter.Output) {
+        
+        if filterOutput.realTimeMessage != .none {
+            print("Real Time : \(filterOutput.realTimeMessage)")
+        }
+        
+        if (ticks % 24 == 0) {
+            print("Cnx Ticks: \(self.ticks) note: \(self.counter)")
+        }
+        
+        if filterOutput.activatedChannels > 0 {
+            
+            let clockStr = "clock: (\(filterOutput.ticks)Ticks)"
+            
+            print("Filter Time: \(Int(filterOutput.filteringTime * 1000000))µs  \(clockStr)")
+
+        var channelsString: String = ""
+        var noteRanges = [MidiRange]()
+        for i in 0..<16 {
+            if filterOutput.activatedChannels & (0x0001 << i) > 0 {
+                let nrange = filterOutput.higherAndLowerNotes[i]
+                if nrange.isSet {
+                    noteRanges += [nrange]
+                }
+                let chan = String("0\(i)".suffix(2))
+                channelsString += "[\(chan)] "
+            } else {
+                channelsString += "[  ] "
             }
         }
-    }
+        let rangesString = (noteRanges.enumerated().map { "CH\($0.offset) : \($0.element)" }).joined(separator: " ")
+        print("Channels: \(channelsString)")
+            if !noteRanges.isEmpty { print("Notes: \(rangesString)") }
+        
+        }
 
-    func outlet(with identifier: String) -> MidiOutlet? {
-        outlets.first(where: {$0.uuid.uuidString == identifier})
     }
-
-    func outlet(with ref: MIDIObjectRef) -> MidiOutlet? {
-        outlets.first(where: {$0.ref == ref})
-    }
-
-    #if DEBUG
-    public static let testIn =
-        MidiBay(outlets: [
-        MidiOutlet(ref: 1, name: "Midi Input Device 1"),
-        MidiOutlet(ref: 2, name: "Midi Input Device 2")
-        ])
-    
-    public static let testOut =
-        MidiBay(outlets: [
-        MidiOutlet(ref: 3, name: "Midi Output Device 1"),
-        MidiOutlet(ref: 4, name: "Midi Output Device 2")
-        ])
-    #endif
 }
 
+#endif

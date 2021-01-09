@@ -21,7 +21,7 @@ public class NewConnectionInfo: Identifiable, ObservableObject, Equatable {
     
     public var name: String = "main"
     public var connectionType: ConnectionType = .packets
-    public var range: NoteRange = NoteRange()
+    public var range: MidiRange = MidiRange()
     public var channels: MidiChannelMask = .all {
         didSet {
             objectWillChange.send()
@@ -37,7 +37,7 @@ public class NewConnectionInfo: Identifiable, ObservableObject, Equatable {
         }
     }
     
-    public init(name: String, portType: ConnectionType = .packets, range: NoteRange = NoteRange()) {
+    public init(name: String, portType: ConnectionType = .packets, range: MidiRange = MidiRange()) {
         self.name = name
         self.connectionType = portType
         self.range = range
