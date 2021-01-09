@@ -2,15 +2,25 @@
 
 **WORK IN PROGRESS**
 
-A Swift Midi boilerplate based on [SwiftMidi](https://github.com/moosefactory/SwiftMIDI)
+A Swift Midi manager boilerplate based on [SwiftMidi](https://github.com/moosefactory/SwiftMIDI)
 
-```
-https://github.com/moosefactory/SwiftMIDI
-```
+The **SwiftMIDICenter** framework adds some more system oriented features like storage and configurations management other the **SwiftMIDI** framework.
+
+[https://github.com/moosefactory/SwiftMIDICenter]()
+
+**SwiftMIDI** is a simple framework wrapping principal CoreMIDI functions, and adding few logic and definitions for common midi operations.
+
+[https://github.com/moosefactory/SwiftMIDI]()
+
+
+You can see both working in a sample project developed in SwiftUI : **SwiftMidiCenter App**
+
+
+![Scheme](SwiftMIDI ReadMe Scheme.jpg)
 
 ## <font color='#1E72AD'>Installation</font>
 
-**SwiftMIDI** is distributed as a Swift Package
+**SwiftMIDICenter** is distributed as a Swift Package
 
 ## <font color='#1E72AD'>Author</font>
 
