@@ -68,6 +68,11 @@ public class SwiftMidiCenter: ObservableObject {
     /// The midi patch bay
     @Published public var midiBay = MidiPatchBay()
 
+    /// The devices registered in system
+    /// A registered device does not mean it is online
+    
+    @Published public var parc = MidiDevicesParc()
+    
     /// The changing midi patch bay
     ///
     /// When setup is changed, we first prepare the next patchBay.

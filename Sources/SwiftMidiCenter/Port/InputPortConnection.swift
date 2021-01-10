@@ -32,7 +32,8 @@ import Foundation
 import CoreMIDI
 import SwiftMIDI
 
-public struct RefCon {
+/// RefCon is used to identify a connection when receiving packets
+public struct RefCon: CustomStringConvertible {
     weak var port: InputPort?
 
     /// The connection identifier
@@ -42,6 +43,10 @@ public struct RefCon {
     
     var identifier: String {
         "\(connectionIdentifier) : \(outlet.name)"
+    }
+    
+    public var description: String {
+        return "RefCon \(connectionIdentifier) - port: \(port!.name) - outlet: \(outlet)"
     }
 }
 

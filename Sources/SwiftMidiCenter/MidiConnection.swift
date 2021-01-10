@@ -67,7 +67,7 @@ public final class MidiConnection: MidiWire, Codable, ObservableObject {
     // MARK: - Input Transform
     
     @Published public var filter: MidiFilterSettings
-        
+    
     @Published public var channelsTranspose = MidiChannelsTranspose()
     
     /// The output channel mask. Input channel is forwarded to all channel in the output mask
@@ -91,7 +91,26 @@ public final class MidiConnection: MidiWire, Codable, ObservableObject {
     public var counter: Int { return ticks / 24 }
     
     // Last realtime message, excluding clock
-    public var lastRealTimeMessage: RealTimeMessageType = .none
+    public var lastRealTimeMessage: RealTimeMessageType = .none {
+        didSet {
+            switch lastRealTimeMessage {
+            case .start:
+                ticks = 0
+                sequencerRunning = true
+            case .continue:
+                sequencerRunning = true
+            case .stop:
+                sequencerRunning = false
+            case .systemReset:
+                sequencerRunning = false
+                ticks = 0
+            default:
+                break
+            }
+        }
+    }
+    
+    public var sequencerRunning: Bool = false
     
     public var name: String
     
@@ -145,7 +164,7 @@ public final class MidiConnection: MidiWire, Codable, ObservableObject {
         destinations.forEach { destination in
             
             var packets: MIDIPacketList?
-                
+            
             if f.settings.willPassThrough {
                 packets = packetList.pointee
             } else {
@@ -157,15 +176,17 @@ public final class MidiConnection: MidiWire, Codable, ObservableObject {
                 
                 // Save last real time message ( excepted clock - Start, Continue, Stop)
                 lastRealTimeMessage = filterOutput.realTimeMessage
-                
+            
                 // Debug
                 #if DEBUG
-                debugLog(filterOutput: filterOutput)
+                DispatchQueue.main.async {
+                    self.debugLog(filterOutput: filterOutput)
+                }
                 #endif
             }
             
             guard var packets_ = packets else { return }
-
+            
             do {
                 try SwiftMIDI.send(port: outputPort!.ref, destination: destination.ref, packetListPointer: &packets_)
             }

@@ -38,11 +38,21 @@ public extension MidiConnection {
     func debugLog(filterOutput: MidiPacketsFilter.Output) {
         
         if filterOutput.realTimeMessage != .none {
-            print("Real Time : \(filterOutput.realTimeMessage)")
+            print("Real Time : \(filterOutput.realTimeMessage) Sequencer Running: \(sequencerRunning)")
         }
         
-        if (ticks % 24 == 0) {
-            print("Cnx Ticks: \(self.ticks) note: \(self.counter)")
+        if filterOutput.programChanges.hasAValue {
+            var str = "Program Change : "
+            filterOutput.programChanges.values.enumerated().forEach {
+                if $0.element >= 0 {
+                    str += "CH\($0.offset) [\($0.element)]"
+                }
+            }
+            print(str)
+        }
+        
+        if (ticks % 24 == 0) && sequencerRunning {
+            print("Connection Ticks: \(self.ticks) note: \(self.counter) timeStamp: \(filterOutput.timeStamp)")
         }
         
         if filterOutput.activatedChannels > 0 {

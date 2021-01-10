@@ -67,4 +67,12 @@ extension SwiftMidiCenter {
     public var outputs: [MidiOutlet] {
         return midiBay.output.outlets
     }
+
+    public var devices: [MidiDevice] {
+        return parc.devices
+    }
+
+    public var entities: [MidiEntity] {
+        return parc.entities
+    }
 }

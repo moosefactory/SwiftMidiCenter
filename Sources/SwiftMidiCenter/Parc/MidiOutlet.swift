@@ -30,6 +30,7 @@
 
 import Foundation
 import CoreMIDI
+import SwiftMIDI
 
 /// Encapsulate a CoreMidi object and gives access to properties
 public protocol MidiObject {
@@ -71,10 +72,22 @@ public class MidiOutlet: Codable, MidiObject {
     /// when listing outlets
     public static let none = MidiOutlet(ref: 0, name: "None")
     
+    /// The midi entity providing this outlet, if any
+    public var entity: MidiEntity? {
+        guard let ref = entityRef else {
+            return nil
+        }
+        return MidiDevicesParc.shared.entity(for: ref)
+    }
+    
+    /// The midi entity ref providing this outlet, if any
+    public var entityRef: MIDIEntityRef? {
+        return try? SwiftMIDI.getEntity(for: ref)
+    }
+    
     // MARK: - Initialisation
     
     init(ref: MIDIEndpointRef = 0, name: String? = nil) {
-        //self.coreMidiIndex = index
         self.ref = ref
         if name == nil {
             let props = ref.properties
@@ -86,6 +99,7 @@ public class MidiOutlet: Codable, MidiObject {
         } else {
             self.name = name!
         }
+        
         self.available = true
     }
     

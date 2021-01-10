@@ -35,12 +35,6 @@ import SwiftMIDI
 /// Pass packetList, events, and connection reference
 public typealias MidiEventsReadBlock = (UnsafePointer<MIDIPacketList>, [MidiEvent], UnsafeMutableRawPointer?)->Void
 
-/// Pass note number, channel, and connection reference
-public typealias TransposeReadBlock = (Int, Int, UnsafeMutableRawPointer?)->Void
-
-/// Pass timestamp, channel, and connection reference
-public typealias ClockReadBlock = (ClockSignal, UnsafeMutableRawPointer?)->Void
-
 public class MidiClient: ObservableObject {
     
     /// The CoreMidi client refcon
@@ -156,6 +150,7 @@ public class MidiClient: ObservableObject {
             guard let cnxRefCon = refCon?.assumingMemoryBound(to: RefCon.self).pointee else {
                 return
             }
+            
             guard let port = cnxRefCon.port else { return }
             
             self.connections.forEach { connection in
