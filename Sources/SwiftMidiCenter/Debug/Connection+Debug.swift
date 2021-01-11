@@ -37,29 +37,78 @@ public extension MidiConnection {
     
     func debugLog(filterOutput: MidiPacketsFilter.Output) {
         
+        // Log realtime message
+        
         if filterOutput.realTimeMessage != .none {
             print("Real Time : \(filterOutput.realTimeMessage) Sequencer Running: \(sequencerRunning)")
         }
         
-        if filterOutput.programChanges.hasAValue {
-            var str = "Program Change : "
-            filterOutput.programChanges.values.enumerated().forEach {
+        // Log Bank Select
+        
+        if filterOutput.bankSelect.hasAValue {
+            var str = "Bank Select : "
+            filterOutput.bankSelect.values.enumerated().forEach {
                 if $0.element >= 0 {
                     str += "CH\($0.offset) [\($0.element)]"
                 }
             }
             print(str)
         }
+
+        // Log program change and real prgram number ( with bank set )
+        
+        if filterOutput.programChanges.hasAValue {
+            var str = "Program Change : "
+            filterOutput.programChanges.values.enumerated().forEach {
+                if $0.element >= 0 {
+                    let realProgram = filterOutput.programNumber(for:$0.offset)
+                    var realProgStr = ""
+                    if $0.element != realProgram {
+                        realProgStr = " (\(realProgram))"
+                    }
+                    str += "CH\($0.offset) [\($0.element) \(realProgStr)]"
+                }
+            }
+            print(str)
+        }
+        
+        // Log pitch bend
+        
+        if filterOutput.pitchBend.hasAValue {
+            var str = "Pitch Bend : "
+            filterOutput.pitchBend.values.enumerated().forEach {
+                if $0.element >= 0 {
+                    str += "CH\($0.offset) [\(Int(filterOutput.pitchBend(for: $0.offset) * 100))%]"
+                }
+            }
+            print(str)
+        }
+        
+        // Log control values
+        
+        if filterOutput.controlValues.hasAValue {
+            var str = "Controls : "
+            filterOutput.controlValues.controlStates.enumerated().forEach {
+                if $0.element.hasValue {
+                    str += "CH \($0.offset)\r"
+                    for control in $0.element.controlValues {
+                        let ctrl = ControlNumbers(rawValue: control.0) ?? .invalid
+                        str +=  "[\(control.0)] = \(control.1) - \(ctrl.description)\r"
+                    }
+                }
+            }
+            print(str)
+        }
+
+        // Log note tick
         
         if (ticks % 24 == 0) && sequencerRunning {
             print("Connection Ticks: \(self.ticks) note: \(self.counter) timeStamp: \(filterOutput.timeStamp)")
         }
         
+        // log activated channels and time passed in filter ( less than 100µs if everything is ok )
         if filterOutput.activatedChannels > 0 {
-            
-            let clockStr = "clock: (\(filterOutput.ticks)Ticks)"
-            
-            print("Filter Time: \(Int(filterOutput.filteringTime * 1000000))µs  \(clockStr)")
+            print("Filter Time: \(Int(filterOutput.filteringTime * 1000000))µs")
 
         var channelsString: String = ""
         var noteRanges = [MidiRange]()
@@ -75,12 +124,14 @@ public extension MidiConnection {
                 channelsString += "[  ] "
             }
         }
+            
+        // Log activated note range
+            
         let rangesString = (noteRanges.enumerated().map { "CH\($0.offset) : \($0.element)" }).joined(separator: " ")
         print("Channels: \(channelsString)")
             if !noteRanges.isEmpty { print("Notes: \(rangesString)") }
         
         }
-
     }
 }
 

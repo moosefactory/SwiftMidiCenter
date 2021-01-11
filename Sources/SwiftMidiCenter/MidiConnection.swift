@@ -66,7 +66,7 @@ public final class MidiConnection: MidiWire, Codable, ObservableObject {
     
     // MARK: - Input Transform
     
-    @Published public var filter: MidiFilterSettings
+    @Published public var filterSettings: MidiFilterSettings
     
     @Published public var channelsTranspose = MidiChannelsTranspose()
     
@@ -89,6 +89,8 @@ public final class MidiConnection: MidiWire, Codable, ObservableObject {
     
     public var ticks: Int = 0
     public var counter: Int { return ticks / 24 }
+    
+    public var filter: MidiPacketsFilter?
     
     // Last realtime message, excluding clock
     public var lastRealTimeMessage: RealTimeMessageType = .none {
@@ -128,7 +130,7 @@ public final class MidiConnection: MidiWire, Codable, ObservableObject {
     public init(name: String = "Connection", filter: MidiFilterSettings = MidiFilterSettings(),
                 inputPort: InputPort? = nil, outputPort: OutputPort? = nil,
                 sources: [MidiOutlet] = [], destinations: [MidiOutlet] = []) {
-        self.filter = filter
+        self.filterSettings = filter
         self.name = name
         self.sources = sources
         self.destinations = destinations
@@ -143,7 +145,7 @@ public final class MidiConnection: MidiWire, Codable, ObservableObject {
         let uuid =  (try? values.decode(UUID.self, forKey: .sources)) ?? UUID()
         self.uuid = uuid
         name =  (try? values.decode(String.self, forKey: .name)) ?? uuid.uuidString
-        filter =  (try? values.decode(MidiFilterSettings.self, forKey: .filter)) ?? MidiFilterSettings()
+        filterSettings =  (try? values.decode(MidiFilterSettings.self, forKey: .filter)) ?? MidiFilterSettings()
         sources = (try? values.decode([MidiOutlet].self, forKey: .sources)) ?? []
         destinations = (try? values.decode([MidiOutlet].self, forKey: .destinations)) ?? []
         let portIdentifier = (try? values.decode(String.self, forKey: .portIdentifier)) ?? ""
@@ -160,7 +162,10 @@ public final class MidiConnection: MidiWire, Codable, ObservableObject {
     
     // Transfer packets to destinations, applying filter
     public func transfer(packetList: UnsafePointer<MIDIPacketList>) {
-        let f = MidiPacketsFilter(settings: filter)
+        if filter == nil {
+            filter = MidiPacketsFilter(settings: filterSettings)
+        }
+        guard let f = filter else { return }
         destinations.forEach { destination in
             
             var packets: MIDIPacketList?
