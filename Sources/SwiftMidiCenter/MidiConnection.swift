@@ -184,9 +184,9 @@ public final class MidiConnection: MidiWire, Codable, ObservableObject {
             
                 // Debug
                 #if DEBUG
-                DispatchQueue.main.async {
-                    self.debugLog(filterOutput: filterOutput)
-                }
+//                DispatchQueue.main.async {
+//                    self.debugLog(filterOutput: filterOutput)
+//                }
                 #endif
             }
             

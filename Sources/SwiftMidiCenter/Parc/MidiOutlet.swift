@@ -85,6 +85,8 @@ public class MidiOutlet: Codable, MidiObject {
         return try? SwiftMIDI.getEntity(for: ref)
     }
     
+    public var isSet: Bool { ref != 0 }
+    
     // MARK: - Initialisation
     
     init(ref: MIDIEndpointRef = 0, name: String? = nil) {
@@ -102,7 +104,7 @@ public class MidiOutlet: Codable, MidiObject {
         
         self.available = true
     }
-    
+
     // MARK: - Functions
     
     /// Connect the outlet to a port

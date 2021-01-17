@@ -39,9 +39,13 @@ public class MidiBay: ObservableObject {
     
     @Published public var outlets = [MidiOutlet]()
     
+    // MARK: - Initialisation
+    
     public init(outlets: [MidiOutlet] = []) {
         self.outlets = outlets
     }
+    
+    // MARK: - Access Outlets
     
     public func outlet(for name: String) -> MidiOutlet? {
         return outlets.first { $0.name == name }
@@ -50,6 +54,20 @@ public class MidiBay: ObservableObject {
     public func forEachOutlet(_ closure: (MidiOutlet)->Void) {
         outlets.forEach { closure($0) }
     }
+    
+    func outlet(with identifier: String) -> MidiOutlet? {
+        outlets.first(where: {$0.uuid.uuidString == identifier})
+    }
+
+    func outlet(with ref: MIDIObjectRef) -> MidiOutlet? {
+        outlets.first(where: {$0.ref == ref})
+    }
+
+    public func index(of outlet: MidiOutlet) -> Int? {
+        return outlets.firstIndex(of: outlet)
+    }
+
+    // MARK: Connect Outlets to Port
     
     public func connectAllOutlets(to port: InputPort) {
         forEachOutlet { outlet in
@@ -60,15 +78,9 @@ public class MidiBay: ObservableObject {
             }
         }
     }
-
-    func outlet(with identifier: String) -> MidiOutlet? {
-        outlets.first(where: {$0.uuid.uuidString == identifier})
-    }
-
-    func outlet(with ref: MIDIObjectRef) -> MidiOutlet? {
-        outlets.first(where: {$0.ref == ref})
-    }
-
+    
+    // MARK: - Debug
+    
     #if DEBUG
     public static let testIn =
         MidiBay(outlets: [

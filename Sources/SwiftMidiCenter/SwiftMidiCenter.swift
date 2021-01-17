@@ -95,8 +95,9 @@ public class SwiftMidiCenter: ObservableObject {
     
     var networkManager: MIDINetworkManager
     
-    var inputPort: InputPort { client.inputPort }
-    
+    public var inputPort: InputPort { client.inputPort }
+    public var outputPort: OutputPort { client.outputPort }
+
     // MARK: - Initialisation
     
     public init(identifier: String) {

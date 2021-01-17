@@ -21,10 +21,6 @@ public class MidiEntity: Codable, MidiObject {
         
     /// Is the device available or not
         
-    public var numberOfDestinations: Int {
-        (try? SwiftMIDI.numberOfDestinations(for: ref)) ?? 0
-    }
-    
     public var available: Bool {
         let firstDest = try? SwiftMIDI.destination(for: ref, at: 0)
         let firstSource = try? SwiftMIDI.source(for: ref, at: 0)
@@ -39,15 +35,42 @@ public class MidiEntity: Codable, MidiObject {
         
         return onlineDest != nil || onlineSource != nil
     }
+
+    // MARK: - Initialize
+
+    public init(ref: MIDIEntityRef) {
+        self.ref = ref
+        self.name = ref.properties.name
+    }
+
+    // MARK: - Access destinations
+    
+    public var numberOfDestinations: Int {
+        (try? SwiftMIDI.numberOfDestinations(for: ref)) ?? 0
+    }
+    
+    public var destinations: [MIDIEndpointRef] {
+        return (try? SwiftMIDI.allDestinations(in: ref)) ?? []
+    }
+    
+    public func forEachDestination(do closure: (MIDIEndpointRef)->Void) {
+        destinations.forEach { closure($0) }
+    }
+    
+    // MARK: - Access sources
     
     public var numberOfSources: Int {
         (try? SwiftMIDI.numberOfSources(for: ref)) ?? 0
     }
     
-    public init(ref: MIDIEntityRef) {
-        self.ref = ref
-        self.name = ref.properties.name
+    public var sources: [MIDIEndpointRef] {
+        return (try? SwiftMIDI.allSources(in: ref)) ?? []
     }
+    
+    public func forEachSource(do closure: (MIDIEndpointRef)->Void) {
+        sources.forEach { closure($0) }
+    }
+
 }
 
 
