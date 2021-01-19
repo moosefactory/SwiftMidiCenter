@@ -77,7 +77,7 @@ public class MidiOutlet: Codable, MidiObject {
         guard let ref = entityRef else {
             return nil
         }
-        return MidiDevicesParc.shared.entity(for: ref)
+        return MidiDeviceParc.shared.entity(for: ref)
     }
     
     /// The midi entity ref providing this outlet, if any
@@ -89,7 +89,7 @@ public class MidiOutlet: Codable, MidiObject {
     
     // MARK: - Initialisation
     
-    init(ref: MIDIEndpointRef = 0, name: String? = nil) {
+    public init(ref: MIDIEndpointRef = 0, name: String? = nil) {
         self.ref = ref
         if name == nil {
             let props = ref.properties
@@ -111,6 +111,10 @@ public class MidiOutlet: Codable, MidiObject {
 
     func connect(to port: InputPort, connectionIdentifier: String) throws  {
         try port.connect(identifier: connectionIdentifier, outlet: self)
+    }
+    
+    func connections() {
+        //err = MIDIObjectGetDataProperty(endpoint, kMIDIPropertyConnectionUniqueID, &connections);
     }
 }
 

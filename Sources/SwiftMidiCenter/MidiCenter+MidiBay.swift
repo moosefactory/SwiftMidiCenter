@@ -69,10 +69,18 @@ extension SwiftMidiCenter {
     }
 
     public var devices: [MidiDevice] {
-        return parc.devices
+        return parc.internalDevices.devices
+    }
+
+    public var externalDevices: [MidiDevice] {
+        return parc.externalDevices.devices
     }
 
     public var entities: [MidiEntity] {
-        return parc.entities
+        return parc.internalDevices.entities
+    }
+    
+    public var externalEntities: [MidiEntity] {
+        return parc.externalDevices.entities
     }
 }

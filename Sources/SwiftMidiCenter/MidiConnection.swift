@@ -87,6 +87,8 @@ public final class MidiConnection: MidiWire, Codable, ObservableObject {
     
     @Published public var midiThru: Bool = true
     
+    public var eventsTap: (([MidiEvent])->Void)?
+    
     public var ticks: Int = 0
     public var counter: Int { return ticks / 24 }
     
@@ -166,34 +168,51 @@ public final class MidiConnection: MidiWire, Codable, ObservableObject {
             filter = MidiPacketsFilter(settings: filterSettings)
         }
         guard let f = filter else { return }
-        destinations.forEach { destination in
+        var packets: MIDIPacketList?
+        
+        if f.settings.willPassThrough {
+            packets = packetList.pointee
+        } else {
+            let filterOutput = f.filter(packetList: packetList)
+            packets = filterOutput.packets
             
-            var packets: MIDIPacketList?
+            // Add ticks to connection counter
+            self.ticks += Int(filterOutput.ticks)
             
-            if f.settings.willPassThrough {
-                packets = packetList.pointee
-            } else {
-                let filterOutput = f.filter(packetList: packetList)
-                packets = filterOutput.packets
-                
-                // Add ticks to connection counter
-                self.ticks += Int(filterOutput.ticks)
-                
-                // Save last real time message ( excepted clock - Start, Continue, Stop)
-                lastRealTimeMessage = filterOutput.realTimeMessage
-            
-                // Debug
-                #if DEBUG
+            // Save last real time message ( excepted clock - Start, Continue, Stop)
+            lastRealTimeMessage = filterOutput.realTimeMessage
+        
+            // Debug
+            #if DEBUG
 //                DispatchQueue.main.async {
 //                    self.debugLog(filterOutput: filterOutput)
 //                }
-                #endif
+            #endif
+        }
+        
+        guard var packets_ = packets else { return }
+
+        if let eventsTap = self.eventsTap {
+            DispatchQueue.main.async {
+            let numPackets = packets_.numPackets
+            var p = packets_.packet
+            var events = [MidiEvent]()
+            for i in 0..<numPackets {
+                if let type = MidiEventType(rawValue: p.data.0 & 0xF0) {
+                    print("Event: \(type) - channel: \(p.data.0 & 0x0F) - dest: \(self.destinations)")
+                    let event = MidiEvent(type: type, timestamp: p.timeStamp, channel: p.data.0 & 0x0F, value1: p.data.1, value2: p.data.2)
+                    events.append(event)
+                    print(event)
+                }
+                p = MIDIPacketNext(&p).pointee
             }
-            
-            guard var packets_ = packets else { return }
-            
+            eventsTap(events)
+            }
+        }
+        destinations.forEach { destination in
             do {
-                try SwiftMIDI.send(port: outputPort!.ref, destination: destination.ref, packetListPointer: &packets_)
+                print("send \(packets_.numPackets) packets to \(destination) output: \(outputPort)")
+     //           try SwiftMIDI.send(port: outputPort!.ref, destination: destination.ref, packetListPointer: &packets_)
             }
             catch {
                 print("MidiConnection Error : \(error)")

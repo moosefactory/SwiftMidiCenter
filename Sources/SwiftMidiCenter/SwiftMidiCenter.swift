@@ -64,87 +64,98 @@ public class SwiftMidiCenter: ObservableObject {
     
     /// The default CoreMidi client ref
     @Published public var client: MidiClient!
-
+    
     /// The midi patch bay
     @Published public var midiBay = MidiPatchBay()
-
+    
     /// The devices registered in system
     /// A registered device does not mean it is online
     
-    @Published public var parc = MidiDevicesParc()
+    @Published public var parc = MidiDeviceParc.shared
+    
     
     /// The changing midi patch bay
     ///
     /// When setup is changed, we first prepare the next patchBay.
     /// We commit when we receive a `setUpChanged` notification
     internal var changingMidiBay = MidiPatchBay()
-
+    
     /// The direct midi thru connections
     ///
     /// IS THIS CORE MIDI API BUGGED ?
     /// NO WAY TO FORWARD FROM KEYBOARD TO DEVICE ON MACOS BIG SUR 11.1
     //@Published public var midiThruConnections = [MidiThru]()
-
+    
     /// The midi thru input connections
     //@Published public var thruConnections = [MidiConnection]()
-
+    
     /// The midi connections
     //@Published public var connections = [MidiConnection]()
-
+    
     var cancellables = [String: AnyCancellable]()
     
     var networkManager: MIDINetworkManager
     
     public var inputPort: InputPort { client.inputPort }
     public var outputPort: OutputPort { client.outputPort }
-
+    
     // MARK: - Initialisation
     
     public init(identifier: String) {
         self.identifier = identifier
-
+        
         networkManager = MIDINetworkManager()
-
+        
         do {
             // Creates a midi client with a default input port
             client = try MidiClient(midiCenter: self, name: "defaultClient")
             
-           // #if CREATE_MIDI_THRU_CLIENT
+            // #if CREATE_MIDI_THRU_CLIENT
             // Opens the midi thru port
             
-//            try client?.openInputPortWithPacketsReader(type: .packets)  { packetList, refCon in
-//                guard let mainOut = self.client?.mainOut,
-//                      !self.thruConnections.isEmpty else { return }
-//
-//                self.thruConnections.forEach { connection in
-//                    guard connection.enabled else { return }
-//                    connection.destinations.forEach { outlet in
-//                        try? SwiftMIDI.send(port: mainOut.ref, destination: outlet.ref, packetListPointer: packetList)
-//                    }
-//                }
-//            }
-//
-//           // #endif
-//
-//            // Opens the midi events port
-//
-//            try client?.openInputPortWithEventsReader { packetList, events, connectionRefCon in
-//
-//                guard let mainInEvents = self.client?.mainInEventsPort,
-//                      !self.connections.isEmpty else { return }
-//
-//                self.connections.forEach {connection in
-//                    //MIDISendEventList(eventsPort.ref, connection.destination.ref, <#T##evtlist: UnsafePointer<MIDIEventList>##UnsafePointer<MIDIEventList>#>)
-//                }
-//            }
-//
+            //            try client?.openInputPortWithPacketsReader(type: .packets)  { packetList, refCon in
+            //                guard let mainOut = self.client?.mainOut,
+            //                      !self.thruConnections.isEmpty else { return }
+            //
+            //                self.thruConnections.forEach { connection in
+            //                    guard connection.enabled else { return }
+            //                    connection.destinations.forEach { outlet in
+            //                        try? SwiftMIDI.send(port: mainOut.ref, destination: outlet.ref, packetListPointer: packetList)
+            //                    }
+            //                }
+            //            }
+            //
+            //           // #endif
+            //
+            //            // Opens the midi events port
+            //
+            //            try client?.openInputPortWithEventsReader { packetList, events, connectionRefCon in
+            //
+            //                guard let mainInEvents = self.client?.mainInEventsPort,
+            //                      !self.connections.isEmpty else { return }
+            //
+            //                self.connections.forEach {connection in
+            //                    //MIDISendEventList(eventsPort.ref, connection.destination.ref, <#T##evtlist: UnsafePointer<MIDIEventList>##UnsafePointer<MIDIEventList>#>)
+            //                }
+            //            }
+            //
             try initMidi()
+            do {
+                let connections = try SwiftMIDI.findMidiThruConnections(owner: "")
+                for connection in connections.enumerated() {
+                    let cnx = connection.element
+                    print("Cnx \(connection.offset) : \(cnx) - \(cnx.name)")
+                }
+            }
+            catch {
+                print(error)
+            }
         } catch {
             fatalError(error.localizedDescription)
         }
-
+        
     }
-            
+    
     /// Restart the midi server
     public func reset() throws {
         try SwiftMIDI.restart()
@@ -152,31 +163,42 @@ public class SwiftMidiCenter: ObservableObject {
     
     /// Remove all midi thru connections
     public func removeAllMidiConnections() {
-//        while let thru = midiThruConnections.popLast() {
-//            do {
-//                if let ref = thru.connectionRef {
-//                    try SwiftMIDI.removeMidiThruConnection(connectionRef: ref)
-//                }
-//            } catch {
-//                print(error)
-//            }
-//        }
+        //        while let thru = midiThruConnections.popLast() {
+        //            do {
+        //                if let ref = thru.connectionRef {
+        //                    try SwiftMIDI.removeMidiThruConnection(connectionRef: ref)
+        //                }
+        //            } catch {
+        //                print(error)
+        //            }
+        //        }
     }
-
+    
     public func createPersistentThruConnection() throws {
         let thru = MidiThru()
         if let err = thru.stickyError {
             throw err
         }
     }
+    
+    public func newConnection(inputOutlet: MidiOutlet, outputOutlet: MidiOutlet, filter: MidiFilterSettings) -> MidiConnection {
+        let cnx = MidiConnection(name: "Connection",
+                                 filter: filter,
+                                 inputPort: inputPort,
+                                 outputPort: outputPort,
+                                 sources: [inputOutlet],
+                                 destinations: [outputOutlet])
+        client.addConnection(cnx, in: inputPort)
+        return cnx
+    }
 }
 
 extension SwiftMidiCenter {
-
+    
     func input(with identifier: String) -> MidiOutlet? {
         midiBay.input.outlet(with: identifier)
     }
-
+    
     func output(with identifier: String) -> MidiOutlet? {
         midiBay.output.outlet(with: identifier)
     }
@@ -185,7 +207,7 @@ extension SwiftMidiCenter {
 #if DEBUG
 
 extension SwiftMidiCenter {
-
+    
     /// To use in tests and swiftui previews
     public static var test: MidiCenter = {
         let mc = MidiCenter(identifier: "com.moosefactory.midiDebug")
@@ -193,7 +215,7 @@ extension SwiftMidiCenter {
         mc.midiBay.output = MidiBay.testOut
         return mc
     }()
-
+    
 }
 
 #endif
