@@ -46,9 +46,13 @@ public extension MIDIObjectRef {
     var nameConf: [String:Any] { return properties.nameConfiguration }
 }
 
-public struct MidiPatchBay {
+public struct MidiPatchBay: Codable {
     public var input = MidiBay()
     public var output = MidiBay()
+    
+    public var allOutlets: [MidiOutlet] {
+        return input.outlets + output.outlets
+    }
 }
 
 public class MidiOutlet: Codable, MidiObject {
@@ -70,7 +74,11 @@ public class MidiOutlet: Codable, MidiObject {
     /// This empty outlet, plugged on nothing.
     /// It can be used to create unconfigured connections, and is useful in UI to display a 'None' option to the user
     /// when listing outlets
-    public static let none = MidiOutlet(ref: 0, name: "None")
+    public static let noInput = MidiOutlet(ref: 0, name: "No Input", isInput: true)
+    public static let noOutput = MidiOutlet(ref: 0, name: "No Output", isInput: false)
+    
+    /// Is this outlet an input or an output. One must choose.
+    public var isInput: Bool
     
     /// The midi entity providing this outlet, if any
     public var entity: MidiEntity? {
@@ -89,7 +97,7 @@ public class MidiOutlet: Codable, MidiObject {
     
     // MARK: - Initialisation
     
-    public init(ref: MIDIEndpointRef = 0, name: String? = nil) {
+    public init(ref: MIDIEndpointRef = 0, name: String? = nil, isInput: Bool) {
         self.ref = ref
         if name == nil {
             let props = ref.properties
@@ -101,7 +109,7 @@ public class MidiOutlet: Codable, MidiObject {
         } else {
             self.name = name!
         }
-        
+        self.isInput = isInput
         self.available = true
     }
 

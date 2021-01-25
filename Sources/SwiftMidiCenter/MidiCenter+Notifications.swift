@@ -51,11 +51,12 @@ extension SwiftMidiCenter {
     
     /// A new midi input is  available
     func didAdd(_ object: SwiftMIDI.Notification.Object) {
-        withBay(for: object.type.swifty) { bay in
+        let type = object.type.swifty
+        withBay(for: type) { bay in
             if let outlet = bay.outlet(with: object.ref) {
                 outlet.available = true
             } else {
-                let newOutlet = MidiOutlet(ref: object.ref)
+                let newOutlet = MidiOutlet(ref: object.ref, isInput: type.isSource)
                 bay.outlets.append(newOutlet)
             }
         }

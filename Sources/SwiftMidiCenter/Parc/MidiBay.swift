@@ -35,14 +35,37 @@ import CoreMIDI
 ///
 /// MidiBay is a patch abstraction to represent and store midi endpoints
 
-public class MidiBay: ObservableObject {
+final public class MidiBay: ObservableObject, Codable {
     
     @Published public var outlets = [MidiOutlet]()
+    
+    enum CodingKeys: String, CodingKey {
+        case outlets
+    }
     
     // MARK: - Initialisation
     
     public init(outlets: [MidiOutlet] = []) {
         self.outlets = outlets
+    }
+    
+    /// Init step from JSON container
+    public init(from decoder: Decoder) throws {
+        let values = try decoder.container(keyedBy: CodingKeys.self)
+        
+        do {
+            outlets = try values.decode([MidiOutlet].self, forKey: .outlets)
+        }
+        catch {
+            print("Can't decode outlets - \(error)")
+            throw error
+        }
+    }
+    
+    public func encode(to encoder: Encoder) throws {
+        var container = encoder.container(keyedBy: CodingKeys.self)
+
+        try container.encode(outlets, forKey: .outlets)
     }
     
     // MARK: - Access Outlets
@@ -84,14 +107,14 @@ public class MidiBay: ObservableObject {
     #if DEBUG
     public static let testIn =
         MidiBay(outlets: [
-        MidiOutlet(ref: 1, name: "Midi Input Device 1"),
-        MidiOutlet(ref: 2, name: "Midi Input Device 2")
+            MidiOutlet(ref: 1, name: "Midi Input Device 1", isInput: true),
+        MidiOutlet(ref: 2, name: "Midi Input Device 2", isInput: true)
         ])
     
     public static let testOut =
         MidiBay(outlets: [
-        MidiOutlet(ref: 3, name: "Midi Output Device 1"),
-        MidiOutlet(ref: 4, name: "Midi Output Device 2")
+        MidiOutlet(ref: 3, name: "Midi Output Device 1", isInput: false),
+        MidiOutlet(ref: 4, name: "Midi Output Device 2", isInput: false)
         ])
     #endif
 }

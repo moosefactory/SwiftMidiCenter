@@ -48,6 +48,14 @@ public class NewConnectionInfo: Identifiable, ObservableObject, Equatable {
 
 public typealias MidiCenter = SwiftMidiCenter
 
+public class StudioFile: Codable {
+    public private(set) var midiPatchbay: MidiPatchBay
+    
+    init(midiPatchBay: MidiPatchBay) {
+        self.midiPatchbay = midiPatchBay
+    }
+}
+
 /// MidiCenter
 ///
 /// The MidiCenter object is responsible of:
@@ -99,9 +107,26 @@ public class SwiftMidiCenter: ObservableObject {
     public var inputPort: InputPort { client.inputPort }
     public var outputPort: OutputPort { client.outputPort }
     
+    public var studioFileURL: URL? {
+        didSet {
+            try? loadStudio()
+        }
+    }
+    
+    func loadStudio() throws {
+        guard let studioFileURL = studioFileURL else { return }
+        let data = try Data(contentsOf: studioFileURL)
+        let studioFile = try JSONDecoder().decode(StudioFile.self, from: data)
+        midiBay = studioFile.midiPatchbay
+    }
+    
+    public func makeStudioData() -> StudioFile {
+        return StudioFile(midiPatchBay: midiBay)
+    }
+    
     // MARK: - Initialisation
     
-    public init(identifier: String) {
+    public init(identifier: String, studioFileURL: URL? = nil) {
         self.identifier = identifier
         
         networkManager = MIDINetworkManager()
@@ -109,36 +134,6 @@ public class SwiftMidiCenter: ObservableObject {
         do {
             // Creates a midi client with a default input port
             client = try MidiClient(midiCenter: self, name: "defaultClient")
-            
-            // #if CREATE_MIDI_THRU_CLIENT
-            // Opens the midi thru port
-            
-            //            try client?.openInputPortWithPacketsReader(type: .packets)  { packetList, refCon in
-            //                guard let mainOut = self.client?.mainOut,
-            //                      !self.thruConnections.isEmpty else { return }
-            //
-            //                self.thruConnections.forEach { connection in
-            //                    guard connection.enabled else { return }
-            //                    connection.destinations.forEach { outlet in
-            //                        try? SwiftMIDI.send(port: mainOut.ref, destination: outlet.ref, packetListPointer: packetList)
-            //                    }
-            //                }
-            //            }
-            //
-            //           // #endif
-            //
-            //            // Opens the midi events port
-            //
-            //            try client?.openInputPortWithEventsReader { packetList, events, connectionRefCon in
-            //
-            //                guard let mainInEvents = self.client?.mainInEventsPort,
-            //                      !self.connections.isEmpty else { return }
-            //
-            //                self.connections.forEach {connection in
-            //                    //MIDISendEventList(eventsPort.ref, connection.destination.ref, <#T##evtlist: UnsafePointer<MIDIEventList>##UnsafePointer<MIDIEventList>#>)
-            //                }
-            //            }
-            //
             try initMidi()
             do {
                 let connections = try SwiftMIDI.findMidiThruConnections(owner: "")

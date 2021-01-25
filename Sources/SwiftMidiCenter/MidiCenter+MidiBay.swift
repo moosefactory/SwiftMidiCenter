@@ -36,13 +36,13 @@ extension SwiftMidiCenter {
     /// Initialize midi inputs and outputs
     
     func initMidi() throws {
-        changingMidiBay.input.outlets = SwiftMIDI.allSources.map { MidiOutlet(ref: $0) }
+        changingMidiBay.input.outlets = SwiftMIDI.allSources.map { MidiOutlet(ref: $0, isInput: true) }
 
 //        if let defaultInputPort = client?.inputPorts.first {
 //            changingMidiBay.input.connectAllOutlets(to: defaultInputPort)
 //        }
         
-        changingMidiBay.output.outlets = SwiftMIDI.allDestinations.map { MidiOutlet(ref: $0) }
+        changingMidiBay.output.outlets = SwiftMIDI.allDestinations.map { MidiOutlet(ref: $0, isInput: false) }
         
         // Commit the midi bay
         midiBay = changingMidiBay

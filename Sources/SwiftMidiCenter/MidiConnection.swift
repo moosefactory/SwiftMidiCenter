@@ -241,8 +241,8 @@ public final class MidiConnection: MidiWire, Codable, ObservableObject {
 
 public extension MidiConnection {
     static let test = MidiConnection(name: "Test Connection", inputPort: InputPort.test,
-                                     sources: [MidiOutlet(ref: 0, name: "in1"), MidiOutlet(ref: 0, name: "in2")],
-                                     destinations: [MidiOutlet(ref: 0, name: "out1"), MidiOutlet(ref: 0, name: "out2")])
+                                     sources: [MidiOutlet(ref: 0, name: "in1", isInput: true), MidiOutlet(ref: 0, name: "in2", isInput: true)],
+                                     destinations: [MidiOutlet(ref: 0, name: "out1", isInput: false), MidiOutlet(ref: 0, name: "out2", isInput: false)])
 }
 
 #endif
