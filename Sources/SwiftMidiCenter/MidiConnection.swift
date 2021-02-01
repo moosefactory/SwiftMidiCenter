@@ -211,8 +211,8 @@ public final class MidiConnection: MidiWire, Codable, ObservableObject {
         }
         destinations.forEach { destination in
             do {
-                print("send \(packets_.numPackets) packets to \(destination) output: \(outputPort)")
-     //           try SwiftMIDI.send(port: outputPort!.ref, destination: destination.ref, packetListPointer: &packets_)
+                //print("send \(packets_.numPackets) packets to \(destination) output: \(outputPort)")
+                try SwiftMIDI.send(port: outputPort!.ref, destination: destination.ref, packetListPointer: &packets_)
             }
             catch {
                 print("MidiConnection Error : \(error)")

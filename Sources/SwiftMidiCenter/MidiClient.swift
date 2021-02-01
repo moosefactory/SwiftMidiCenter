@@ -81,15 +81,13 @@ public class MidiClient: ObservableObject {
     
     // MARK: - Initialisation
     
-    public init(midiCenter: MidiCenter, name: String) throws {
+    public init(midiCenter: MidiCenter, name: String, readBlock: @escaping MIDIReadBlock) throws {
         self.midiCenter = midiCenter
         self.identifier = "\(midiCenter.identifier).\(name)"
         
         self.ref = try SwiftMIDI.createClient(name: identifier, with: notifyBlock)
         
-        inputPort = try openInputPortWithPacketsReader(name: "in", type: .packets) { packets, refCon in
-            
-        }
+        inputPort = try openInputPortWithPacketsReader(name: "in", type: .packets, readBlock: readBlock)
         outputPort = try OutputPort(client: self, name: "out")
         
     }
@@ -104,6 +102,8 @@ public class MidiClient: ObservableObject {
     func receive(packets: UnsafePointer<MIDIPacketList>, refCon: UnsafeMutableRawPointer?) {
         
     }
+    
+    public var customReceiveBlock: MIDIReadBlock?
     
     // MARK: - Notifications handling
     
@@ -147,6 +147,11 @@ public class MidiClient: ObservableObject {
     public func openInputPortWithPacketsReader(name: String = "mainIn", type: ConnectionType, readBlock: @escaping MIDIReadBlock) throws -> InputPort {
         
         let inputPort = try InputPort(client: self, type: type , name: name) { packetList, refCon in
+            
+            if let receiveBlock = self.customReceiveBlock {
+                receiveBlock(packetList, refCon)
+            }
+            
             guard let cnxRefCon = refCon?.assumingMemoryBound(to: RefCon.self).pointee else {
                 return
             }
@@ -233,7 +238,7 @@ extension MidiClient: CustomStringConvertible {
 
 extension MidiClient {
     
-    public static let test = try! MidiClient(midiCenter: MidiCenter.shared, name: "Test Client")
+    public static let test = try! MidiClient(midiCenter: MidiCenter.shared, name: "Test Client") { _,_ in}
     private func log(notification: SwiftMIDINotification) {
         print(notification.description.replacingOccurrences(of: ";", with: "\r    "))
         if notification is SwiftMIDI.Notification.SetUpChanged {

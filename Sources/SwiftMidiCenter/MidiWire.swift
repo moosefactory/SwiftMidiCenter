@@ -67,8 +67,8 @@ extension MidiWire {
 
 extension MidiWire {
     
-    public var sourceIdentifiers: Set<String> {
-        get { Set(sources.map { $0.uuid.uuidString }) }
+    public var sourceIdentifiers: Set<UUID> {
+        get { Set(sources.map { $0.uuid }) }
         set {
             var sources = [MidiOutlet]()
             var addedSources = [MidiOutlet]()
@@ -93,15 +93,15 @@ extension MidiWire {
         }
     }
     
-    public var destinationIdentifiers: Set<String> {
-        get { Set(destinations.map { $0.uuid.uuidString }) }
+    public var destinationIdentifiers: Set<UUID> {
+        get { Set(destinations.map { $0.uuid }) }
         set {
             var destinations = [MidiOutlet]()
             var addedDestinations = [MidiOutlet]()
             var removedDestinations = [MidiOutlet]()
 
             newValue.forEach { identifier in
-                if let outlet = MidiCenter.shared.output(with: identifier) {
+                if let outlet = MidiCenter.shared.output(with: uuid) {
                     destinations.append(outlet)
                     if !self.destinations.contains(outlet) {
                         addedDestinations.append(outlet)

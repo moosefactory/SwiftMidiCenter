@@ -63,6 +63,14 @@ public class MidiOutlet: Codable, MidiObject {
     /// The outlet name
     public private(set) var name: String
     
+    /// The outlet name
+    public var displayName: String {
+        get { return _displayName ?? name }
+        set { _displayName = newValue }
+    }
+    
+    private var _displayName: String?
+    
     /// The associated CoreMidi enpoint object
     public var ref: MIDIEndpointRef
         
@@ -70,15 +78,29 @@ public class MidiOutlet: Codable, MidiObject {
     ///
     /// This is used to determine if the device that provides the outlet is online
     public var available: Bool = false
+
+    /// Is this outlet an input or an output. One must choose.
+    public var isInput: Bool = true
+    
+    // MARK: - Coding Keys
+    
+    enum CodingKeys: String, CodingKey {
+        case uuid
+        case name
+        case _displayName = "displayName"
+        case ref
+        case isInput
+    }
+    
     
     /// This empty outlet, plugged on nothing.
     /// It can be used to create unconfigured connections, and is useful in UI to display a 'None' option to the user
     /// when listing outlets
     public static let noInput = MidiOutlet(ref: 0, name: "No Input", isInput: true)
+    public static let anyInput = MidiOutlet(ref: 0, name: "Any", isInput: true)
     public static let noOutput = MidiOutlet(ref: 0, name: "No Output", isInput: false)
-    
-    /// Is this outlet an input or an output. One must choose.
-    public var isInput: Bool
+
+    // MARK: - Computed Properties
     
     /// The midi entity providing this outlet, if any
     public var entity: MidiEntity? {
@@ -104,7 +126,7 @@ public class MidiOutlet: Codable, MidiObject {
             if props.isSet {
                 self.name =  "\(props.manufacturer) - \(props.name)"
             } else {
-                self.name = "Midi Input"
+                self.name = isInput ? "Midi In" : "Midi Out"
             }
         } else {
             self.name = name!
@@ -141,6 +163,6 @@ extension MidiOutlet: CustomStringConvertible {
 
     public var description: String {
         let avail = available ? "Plugged" : "Unplugged"
-        return "Outlet \(ref) - \(name) - \(avail)"
+        return "Outlet \(ref) - \(name) - \(_displayName ?? "") - \(avail)"
     }
 }

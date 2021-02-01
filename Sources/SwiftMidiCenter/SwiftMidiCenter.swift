@@ -48,13 +48,7 @@ public class NewConnectionInfo: Identifiable, ObservableObject, Equatable {
 
 public typealias MidiCenter = SwiftMidiCenter
 
-public class StudioFile: Codable {
-    public private(set) var midiPatchbay: MidiPatchBay
-    
-    init(midiPatchBay: MidiPatchBay) {
-        self.midiPatchbay = midiPatchBay
-    }
-}
+
 
 /// MidiCenter
 ///
@@ -80,8 +74,7 @@ public class SwiftMidiCenter: ObservableObject {
     /// A registered device does not mean it is online
     
     @Published public var parc = MidiDeviceParc.shared
-    
-    
+
     /// The changing midi patch bay
     ///
     /// When setup is changed, we first prepare the next patchBay.
@@ -133,7 +126,7 @@ public class SwiftMidiCenter: ObservableObject {
         
         do {
             // Creates a midi client with a default input port
-            client = try MidiClient(midiCenter: self, name: "defaultClient")
+            client = try MidiClient(midiCenter: self, name: "defaultClient") { _, _ in }
             try initMidi()
             do {
                 let connections = try SwiftMIDI.findMidiThruConnections(owner: "")
@@ -190,12 +183,12 @@ public class SwiftMidiCenter: ObservableObject {
 
 extension SwiftMidiCenter {
     
-    func input(with identifier: String) -> MidiOutlet? {
-        midiBay.input.outlet(with: identifier)
+    func input(with uuid: UUID) -> MidiOutlet? {
+        midiBay.input.outlet(with: uuid)
     }
     
-    func output(with identifier: String) -> MidiOutlet? {
-        midiBay.output.outlet(with: identifier)
+    func output(with uuid: UUID) -> MidiOutlet? {
+        midiBay.output.outlet(with: uuid)
     }
 }
 
