@@ -87,6 +87,11 @@ public final class MidiConnection: MidiWire, Codable, ObservableObject {
     
     @Published public var midiThru: Bool = true
     
+    lazy var eventsQueue = DispatchQueue(label: "com.moosefactory.midicenter.midievents.\(uuid.uuidString.prefix(4))", qos: .userInteractive, attributes: [], autoreleaseFrequency: .inherit, target: nil)
+    
+    /// eventsTap
+    ///
+    /// If eventsTap closure is set, then packet will be converted to midi objects and passed in the closure
     public var eventsTap: (([MidiEvent])->Void)?
     
     public var ticks: Int = 0
@@ -150,7 +155,6 @@ public final class MidiConnection: MidiWire, Codable, ObservableObject {
         filterSettings =  (try? values.decode(MidiFilterSettings.self, forKey: .filter)) ?? MidiFilterSettings()
         sources = (try? values.decode([MidiOutlet].self, forKey: .sources)) ?? []
         destinations = (try? values.decode([MidiOutlet].self, forKey: .destinations)) ?? []
-        let portIdentifier = (try? values.decode(String.self, forKey: .portIdentifier)) ?? ""
         self.inputPort = MidiCenter.shared.client.inputPort
     }
     
@@ -162,8 +166,35 @@ public final class MidiConnection: MidiWire, Codable, ObservableObject {
         try container.encode((inputPort?.identifier ?? ""), forKey: .portIdentifier)
     }
     
-    // Transfer packets to destinations, applying filter
+    // MARK: - Inputs/Outputs management
+    
+    public func connect(inputs: [MidiOutlet]) {
+        self.sources.append(contentsOf: inputs)
+    }
+    
+    public func disconnect(inputs: [MidiOutlet]) {
+        self.sources.removeAll(where: { source in
+            return inputs.contains(source)
+        })
+    }
+    
+    public func connect(outputs: [MidiOutlet]) {
+        self.destinations.append(contentsOf: outputs)
+    }
+    
+    public func disconnect(outputs: [MidiOutlet]) {
+        self.destinations.removeAll(where: { destination in
+            return outputs.contains(destination)
+        })
+    }
+
+    // MARK: - Packet transfer
+    
+    /// Transfer packets from sources to destinations, applying filter
     public func transfer(packetList: UnsafePointer<MIDIPacketList>) {
+        guard !sources.isEmpty && !destinations.isEmpty else {
+            return
+        }
         if filter == nil {
             filter = MidiPacketsFilter(settings: filterSettings)
         }
@@ -190,34 +221,36 @@ public final class MidiConnection: MidiWire, Codable, ObservableObject {
             #endif
         }
         
+        
         guard var packets_ = packets else { return }
 
-        if let eventsTap = self.eventsTap {
-            DispatchQueue.main.async {
-            let numPackets = packets_.numPackets
-            var p = packets_.packet
-            var events = [MidiEvent]()
-            for i in 0..<numPackets {
-                if let type = MidiEventType(rawValue: p.data.0 & 0xF0) {
-                    print("Event: \(type) - channel: \(p.data.0 & 0x0F) - dest: \(self.destinations)")
-                    let event = MidiEvent(type: type, timestamp: p.timeStamp, channel: p.data.0 & 0x0F, value1: p.data.1, value2: p.data.2)
-                    events.append(event)
-                    print(event)
-                }
-                p = MIDIPacketNext(&p).pointee
-            }
-            eventsTap(events)
-            }
-        }
+        // Midi Thru
+        
         destinations.forEach { destination in
             do {
-                //print("send \(packets_.numPackets) packets to \(destination) output: \(outputPort)")
                 try SwiftMIDI.send(port: outputPort!.ref, destination: destination.ref, packetListPointer: &packets_)
             }
             catch {
                 print("MidiConnection Error : \(error)")
             }
-            
+        }
+
+        // Events
+        
+        if let eventsTap = self.eventsTap {
+            eventsQueue.async {
+            let numPackets = packets_.numPackets
+            var p = packets_.packet
+            var events = [MidiEvent]()
+            for _ in 0..<numPackets {
+                if let type = MidiEventType(rawValue: p.data.0 & 0xF0) {
+                    let event = MidiEvent(type: type, timestamp: p.timeStamp, channel: p.data.0 & 0x0F, value1: p.data.1, value2: p.data.2)
+                    events.append(event)
+                }
+                p = MIDIPacketNext(&p).pointee
+            }
+            eventsTap(events)
+            }
         }
     }
     

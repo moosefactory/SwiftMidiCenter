@@ -126,7 +126,7 @@ public class SwiftMidiCenter: ObservableObject {
         
         do {
             // Creates a midi client with a default input port
-            client = try MidiClient(midiCenter: self, name: "defaultClient") { _, _ in }
+            client = try MidiClient(midiCenter: self, name: "defaultClient") { _, _ in }
             try initMidi()
             do {
                 let connections = try SwiftMIDI.findMidiThruConnections(owner: "")
@@ -169,13 +169,13 @@ public class SwiftMidiCenter: ObservableObject {
         }
     }
     
-    public func newConnection(inputOutlet: MidiOutlet, outputOutlet: MidiOutlet, filter: MidiFilterSettings) -> MidiConnection {
+    public func newConnection(inputOutlets: [MidiOutlet], outputOutlets: [MidiOutlet], filter: MidiFilterSettings) -> MidiConnection {
         let cnx = MidiConnection(name: "Connection",
                                  filter: filter,
                                  inputPort: inputPort,
                                  outputPort: outputPort,
-                                 sources: [inputOutlet],
-                                 destinations: [outputOutlet])
+                                 sources: inputOutlets,
+                                 destinations: outputOutlets)
         client.addConnection(cnx, in: inputPort)
         return cnx
     }

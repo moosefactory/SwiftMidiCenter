@@ -109,9 +109,11 @@ public class MidiClient: ObservableObject {
     
     private func notifyBlock(_ notificationPointer: UnsafePointer<MIDINotification>) {
         guard let notification = SwiftMIDI.Notification.make(with: notificationPointer) else { return }
+        #if DEBUG
         if logEvents {
             self.log(notification: notification)
         }
+        #endif
         
         switch notification {
         
@@ -156,8 +158,6 @@ public class MidiClient: ObservableObject {
                 return
             }
             
-            guard let port = cnxRefCon.port else { return }
-            
             self.connections.forEach { connection in
                 // Only transfer if outlet is set in the connection
                 if connection.sources.contains(cnxRefCon.outlet) {
@@ -186,7 +186,7 @@ public class MidiClient: ObservableObject {
             ct = .control
         }
         
-        var filter = MidiFilterSettings(channels: .all, eventTypes: ct)
+        let filter = MidiFilterSettings(channels: .all, eventTypes: ct)
 
         let connection = MidiConnection(name: name, filter: filter,
                                         inputPort: port, outputPort: outputPort,
