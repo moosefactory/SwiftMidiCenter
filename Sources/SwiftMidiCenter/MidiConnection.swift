@@ -97,7 +97,7 @@ public final class MidiConnection: MidiWire, Codable, ObservableObject {
     public var ticks: Int = 0
     public var counter: Int { return ticks / 24 }
     
-    public var filter: MidiPacketsFilter?
+    public var filter: MidiPacketsFilter
     
     // Last realtime message, excluding clock
     public var lastRealTimeMessage: RealTimeMessageType = .none {
@@ -143,6 +143,7 @@ public final class MidiConnection: MidiWire, Codable, ObservableObject {
         self.destinations = destinations
         self.inputPort = inputPort
         self.outputPort = outputPort
+        self.filter = MidiPacketsFilter(settings: filter)
     }
     
     // MARK: - Coding/Decoding
@@ -152,10 +153,12 @@ public final class MidiConnection: MidiWire, Codable, ObservableObject {
         let uuid =  (try? values.decode(UUID.self, forKey: .sources)) ?? UUID()
         self.uuid = uuid
         name =  (try? values.decode(String.self, forKey: .name)) ?? uuid.uuidString
-        filterSettings =  (try? values.decode(MidiFilterSettings.self, forKey: .filter)) ?? MidiFilterSettings()
+        let _filterSettings =  (try? values.decode(MidiFilterSettings.self, forKey: .filter)) ?? MidiFilterSettings()
+        self.filterSettings = _filterSettings
         sources = (try? values.decode([MidiOutlet].self, forKey: .sources)) ?? []
         destinations = (try? values.decode([MidiOutlet].self, forKey: .destinations)) ?? []
         self.inputPort = MidiCenter.shared.client.inputPort
+        self.filter = MidiPacketsFilter(settings: _filterSettings)
     }
     
     public func encode(to encoder: Encoder) throws {
@@ -195,16 +198,13 @@ public final class MidiConnection: MidiWire, Codable, ObservableObject {
         guard !sources.isEmpty && !destinations.isEmpty else {
             return
         }
-        if filter == nil {
-            filter = MidiPacketsFilter(settings: filterSettings)
-        }
-        guard let f = filter else { return }
+
         var packets: MIDIPacketList?
         
-        if f.settings.willPassThrough {
+        if filter.settings.willPassThrough {
             packets = packetList.pointee
         } else {
-            let filterOutput = f.filter(packetList: packetList)
+            let filterOutput = filter.filter(packetList: packetList)
             packets = filterOutput.packets
             
             // Add ticks to connection counter
@@ -243,7 +243,7 @@ public final class MidiConnection: MidiWire, Codable, ObservableObject {
             var p = packets_.packet
             var events = [MidiEvent]()
             for _ in 0..<numPackets {
-                if let type = MidiEventType(rawValue: p.data.0 & 0xF0) {
+                if let type = MidiEventType(rawValue: p.data.0 & 0xF0), type != .realTimeMessage {
                     let event = MidiEvent(type: type, timestamp: p.timeStamp, channel: p.data.0 & 0x0F, value1: p.data.1, value2: p.data.2)
                     events.append(event)
                 }

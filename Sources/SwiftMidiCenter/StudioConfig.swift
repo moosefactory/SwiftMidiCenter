@@ -33,6 +33,12 @@ public final class StudioFile: Codable {
     
     public private(set) var entities: [MidiEntity]
     
+    /// An optional name
+    public var name: String = "Studio Configuration"
+
+    /// An optional name
+    public var uuid: UUID = UUID()
+
     // User configuration
     
     public var clockDestinations: [MidiOutlet] {
@@ -64,6 +70,8 @@ public final class StudioFile: Codable {
     // MARK: - JSON Keys
     
     enum CodingKeys: String, CodingKey {
+        case name
+        case uuid
         case midiPatchbay
         case entities
         case clockDestinations
@@ -86,6 +94,9 @@ public final class StudioFile: Codable {
     public init(from decoder: Decoder) throws {
         let values = try decoder.container(keyedBy: CodingKeys.self)
         
+        name = (try? values.decode(String.self, forKey: .name)) ?? "Studio Configuration"
+        uuid = (try? values.decode(UUID.self, forKey: .uuid)) ?? UUID()
+
         midiPatchbay = (try? values.decode(MidiPatchBay.self, forKey: .midiPatchbay)) ?? MidiPatchBay()
         entities = (try? values.decode([MidiEntity].self, forKey: .entities)) ?? []
         clockDestinations = (try? values.decode([MidiOutlet].self, forKey: .clockDestinations)) ?? []
@@ -96,6 +107,9 @@ public final class StudioFile: Codable {
     public func encode(to encoder: Encoder) throws {
         var container = encoder.container(keyedBy: CodingKeys.self)
         
+        try container.encode(name, forKey: .name)
+        try container.encode(uuid, forKey: .uuid)
+
         try container.encode(midiPatchbay, forKey: .midiPatchbay)
         try container.encode(entities, forKey: .entities)
         try container.encode(clockDestinations, forKey: .clockDestinations)

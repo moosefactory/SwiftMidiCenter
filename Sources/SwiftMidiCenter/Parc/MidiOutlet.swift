@@ -31,6 +31,7 @@
 import Foundation
 import CoreMIDI
 import SwiftMIDI
+import MoofFoundation
 
 /// Encapsulate a CoreMidi object and gives access to properties
 public protocol MidiObject {
@@ -82,6 +83,9 @@ public class MidiOutlet: Codable, MidiObject {
     /// Is this outlet an input or an output. One must choose.
     public var isInput: Bool = true
     
+    /// An optional color that can be set to identify outlets in UI
+    public var color: Color?
+    
     // MARK: - Coding Keys
     
     enum CodingKeys: String, CodingKey {
@@ -90,6 +94,7 @@ public class MidiOutlet: Codable, MidiObject {
         case _displayName = "displayName"
         case ref
         case isInput
+        case color
     }
     
     

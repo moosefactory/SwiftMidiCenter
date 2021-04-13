@@ -202,7 +202,7 @@ public class MidiClient: ObservableObject {
     
     /// Adds a connection from outlet to outlet in the given port
     
-    func addConnection(_ connection: MidiConnection, in port: InputPort) {
+    public func addConnection(_ connection: MidiConnection, in port: InputPort) {
         connection.sources.forEach {
             try? port.connect(identifier: connection.uuid.uuidString, outlet: $0)
         }
@@ -210,6 +210,17 @@ public class MidiClient: ObservableObject {
         objectWillChange.send()
     }
     
+    
+    public func removeConnection(_ connection: MidiConnection, in port: InputPort) {
+        connection.sources.forEach {
+            try? port.disconnect(outlet: $0)
+        }
+        if let index = connections.firstIndex(of: connection) {
+            connections.remove(at: index)
+        }
+        objectWillChange.send()
+    }
+
     func usedInputsDidChange(changes: MidiWireChangeParams<MidiConnection>) {
         
         changes.addedInputOutlets.forEach {

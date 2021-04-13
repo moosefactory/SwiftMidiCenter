@@ -101,7 +101,7 @@ extension MidiWire {
             var removedDestinations = [MidiOutlet]()
 
             newValue.forEach { identifier in
-                if let outlet = MidiCenter.shared.output(with: uuid) {
+                if let outlet = MidiCenter.shared.output(with: identifier) {
                     destinations.append(outlet)
                     if !self.destinations.contains(outlet) {
                         addedDestinations.append(outlet)
