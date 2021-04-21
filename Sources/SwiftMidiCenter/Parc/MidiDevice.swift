@@ -99,7 +99,9 @@ public class MidiDevice: Codable, MidiObject {
     
     public var entities: [MidiEntity]
     
-    var available: Bool { !ref.offline }
+    public var available: Bool {
+        !ref.offline
+    }
 
     public init(ref: MIDIDeviceRef) {
         self.ref = ref

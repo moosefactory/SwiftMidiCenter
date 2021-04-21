@@ -24,18 +24,7 @@ public class MidiEntity: Codable, MidiObject {
     /// Is the device available or not
         
     public var available: Bool {
-        let firstDest = try? SwiftMIDI.destination(for: ref, at: 0)
-        let firstSource = try? SwiftMIDI.source(for: ref, at: 0)
-        
-        let onlineDest = firstDest != nil
-        ? SwiftMIDI.allDestinations.first { $0 == firstDest! }
-        : nil
-        
-        let onlineSource = firstSource != nil
-        ? SwiftMIDI.allSources.first { $0 == firstSource! }
-        : nil
-        
-        return onlineDest != nil || onlineSource != nil
+        return !ref.offline
     }
 
     // MARK: - Initialize
