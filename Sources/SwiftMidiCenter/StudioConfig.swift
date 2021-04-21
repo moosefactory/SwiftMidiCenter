@@ -81,12 +81,12 @@ public final class StudioFile: Codable {
     
     // MARK: - Initialisation
 
-    init(midiPatchBay: MidiPatchBay) {
-        self.midiPatchbay = midiPatchBay
-        self.entities = [MidiEntity]()
+    init(midiCenter: MidiCenter) {
+        self.midiPatchbay = midiCenter.midiBay
+        self.entities = midiCenter.entities
         self.clockDestinations = [MidiOutlet]()
-        self.usedInputUUIDs = [UUID]()
-        self.usedOutputUUIDs = [UUID]()
+        self.usedInputUUIDs = midiCenter.deviceConnections.connections.values.compactMap { $0.outlet?.uuid }
+        self.usedOutputUUIDs = midiCenter.deviceConnections.connections.values.compactMap { $0.outlet?.uuid }
     }
     
     // MARK: - JSON Encoding/Decoding

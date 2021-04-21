@@ -19,6 +19,8 @@ public class MidiEntity: Codable, MidiObject {
     
     public var ref: MIDIEntityRef
         
+    public var uniqueID: Int { return ref.uniqueID }
+    
     /// Is the device available or not
         
     public var available: Bool {
@@ -43,7 +45,25 @@ public class MidiEntity: Codable, MidiObject {
         self.name = ref.properties.name
     }
 
-    // MARK: - Access destinations
+    // MARK: - Access endpoints
+    
+    public var endpoints: [MIDIEndpointRef] { sources + destinations }
+    
+    public func endpoint(for connectionID: Int) -> MIDIEndpointRef? {
+        endpoints.first(where: {$0.connectionId == connectionID})
+    }
+    
+    /// return all connection ids found in sources and destinations
+    var connectionIDs: [Int] {
+        endpoints.reduce([Int]()) { result, endpoint in
+            if endpoint.connectionId != 0 {
+                return result + [endpoint.connectionId]
+            }
+            return result
+        }
+    }
+
+    // MARK: - Access destinations endpoints
     
     public var numberOfDestinations: Int {
         (try? SwiftMIDI.numberOfDestinations(for: ref)) ?? 0
@@ -90,6 +110,13 @@ extension MidiEntity: CustomStringConvertible {
 
     public var description: String {
         let avail = available ? "Plugged" : "Unplugged"
-        return "Entity \(ref) - \(name) - \(avail)"
+        var out = "Entity '\(name)' - id:\(uniqueID) - ref:\(ref) - \(avail)"
+        out += "\r            - Sources"
+        sources.forEach { out += "\r              + '\($0.name)' - id:\($0.uniqueID) - ref:\($0) - cnx:\($0.connectionId)"
+        }
+        out += "\r            - Destinations"
+        destinations.forEach { out += "\r              + '\($0.name)' - id:\($0.uniqueID) - ref:\($0) - cnx:\($0.connectionId)"
+        }
+        return out
     }
 }

@@ -34,11 +34,14 @@ import SwiftMIDI
 
 public class MidiPort: MidiObject, ObservableObject, Identifiable {
     
+    
     /// The CoreMidi port refCon
     public internal(set) var ref: MIDIPortRef = 0
     
     /// The port name - better to choose a lowercase spaceless name
     public private(set) var name: String // Last identifier component
+    
+    public var uniqueID: Int { return ref.uniqueID }
     
     /// The port identifier, in reverse path style
     public private(set) var identifier: String

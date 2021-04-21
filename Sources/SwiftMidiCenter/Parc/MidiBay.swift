@@ -119,3 +119,11 @@ final public class MidiBay: ObservableObject, Codable {
     #endif
 }
 
+extension MidiBay: CustomDebugStringConvertible {
+    public var debugDescription: String {
+        outlets.reduce("   - MidiBay Outlets") { result, outlet in
+            result + "\r    - \(outlet)"
+        }
+    }
+}
+

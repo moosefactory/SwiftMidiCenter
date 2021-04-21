@@ -5,32 +5,13 @@ import Foundation
 import CoreMIDI
 import SwiftMIDI
 
-public struct MidiDeviceParc {
-    
-    static let shared = MidiDeviceParc()
-    
-    public let internalDevices = MidiDeviceSet(external: false)
-    public let externalDevices = MidiDeviceSet(external: true)
-    
-    public func device(with uuid: UUID) -> MidiDevice? {
-        return internalDevices.device(with: uuid) ?? externalDevices.device(with: uuid)
-    }
-    
-    public func device(with name: String) -> MidiDevice? {
-        return internalDevices.device(with: name) ?? externalDevices.device(with: name)
-    }
 
-    public func entity(for entityRef: MIDIEntityRef) -> MidiEntity? {
-        return internalDevices.entity(for: entityRef) ?? externalDevices.entity(for: entityRef)
-    }
-}
-
-/// MidiDeviceParc represents the physical devices actually known in the system
+/// MidiDeviceSet represents an ensemble of devices actually known in the system
 ///
 /// Devices can be added/removed/edited in the **Audio Midi Setup** application
 
 public class MidiDeviceSet: ObservableObject {
-        
+    
     @Published var devices: [MidiDevice]
     
     public private(set) var external: Bool
@@ -90,5 +71,17 @@ public class MidiDeviceSet: ObservableObject {
     
     public func entity(for entityRef: MIDIEntityRef) -> MidiEntity? {
         entities.first { $0.ref == entityRef }
+    }
+    
+    public func entity(for connectionID: Int) -> MidiEntity? {
+        entities.first { $0.endpoint(for: connectionID) != nil }
+    }
+}
+
+extension MidiDeviceSet: CustomDebugStringConvertible {
+    public var debugDescription: String {
+        return devices.reduce(" - MidiDeviceParc - Externel : \(external)") { result, device in
+            result + "\r   - \(device)"
+        }
     }
 }

@@ -36,24 +36,19 @@ import MoofFoundation
 /// Encapsulate a CoreMidi object and gives access to properties
 public protocol MidiObject {
     var ref: MIDIObjectRef { get }
+    //var uniqueID: Int { get }
+    //var offline: Bool { get }
 }
 
 public extension MIDIObjectRef {
-    var name: String { return properties.name }
-    var manufacturer: String { return properties.manufacturer }
-    var uid: Int { return properties.uniqueID }
-    var deviceId: Int { return properties.deviceID }
-    var connectionId: Int { return properties.connectionUniqueID }
-    var nameConf: [String:Any] { return properties.nameConfiguration }
-}
-
-public struct MidiPatchBay: Codable {
-    public var input = MidiBay()
-    public var output = MidiBay()
-    
-    public var allOutlets: [MidiOutlet] {
-        return input.outlets + output.outlets
-    }
+    var name: String { properties.name }
+    var manufacturer: String { properties.manufacturer }
+    var uid: Int { properties.uniqueID }
+    var deviceId: Int { properties.deviceID }
+    var uniqueID: Int { properties.uniqueID }
+    var connectionId: Int { properties.connectionUniqueID }
+    var nameConf: [String:Any] { properties.nameConfiguration }
+    var offline: Bool { properties.offline != 0 }
 }
 
 public class MidiOutlet: Codable, MidiObject {
@@ -61,9 +56,21 @@ public class MidiOutlet: Codable, MidiObject {
     /// Unique Identifier
     public private(set) var uuid = UUID()
     
+    /// The associated CoreMidi enpoint object
+    public var ref: MIDIEndpointRef
+
     /// The outlet name
     public private(set) var name: String
-    
+
+    /// The outlet name
+    public var endPointName: String  { ref.name }
+
+    /// The outlet endpoint uniqueID
+    public var uniqueID: Int  { ref.uniqueID }
+
+    /// The enpoint connection uniqueID, if any
+    public var connectionID: Int { ref.connectionId }
+
     /// The outlet name
     public var displayName: String {
         get { return _displayName ?? name }
@@ -72,13 +79,11 @@ public class MidiOutlet: Codable, MidiObject {
     
     private var _displayName: String?
     
-    /// The associated CoreMidi enpoint object
-    public var ref: MIDIEndpointRef
         
     /// Is the outlet available or not
     ///
     /// This is used to determine if the device that provides the outlet is online
-    public var available: Bool = false
+    public var available: Bool { !ref.offline }
 
     /// Is this outlet an input or an output. One must choose.
     public var isInput: Bool = true
@@ -96,7 +101,6 @@ public class MidiOutlet: Codable, MidiObject {
         case isInput
         case color
     }
-    
     
     /// This empty outlet, plugged on nothing.
     /// It can be used to create unconfigured connections, and is useful in UI to display a 'None' option to the user
@@ -137,7 +141,6 @@ public class MidiOutlet: Codable, MidiObject {
             self.name = name!
         }
         self.isInput = isInput
-        self.available = true
     }
 
     // MARK: - Functions
@@ -167,7 +170,8 @@ extension MidiOutlet: Hashable {
 extension MidiOutlet: CustomStringConvertible {
 
     public var description: String {
-        let avail = available ? "Plugged" : "Unplugged"
-        return "Outlet \(ref) - \(name) - \(_displayName ?? "") - \(avail)"
+        let avail = available ? "Available" : "Not Available"
+        let ioString = isInput ? "Input" : "Output"
+        return "\(ioString) Outlet '\(name)' id: \(uniqueID) - ref:\(ref) | '\(_displayName ?? "")' - \(avail) - CNX: \(connectionID)"
     }
 }

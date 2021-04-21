@@ -10,6 +10,10 @@ import XCTest
 
 class SwiftMidiCenterTests: XCTestCase {
 
+    lazy var midiCenter: MidiCenter = {
+        return MidiCenter.shared
+    }()
+    
     override func setUpWithError() throws {
         // Put setup code here. This method is called before the invocation of each test method in the class.
     }
@@ -30,4 +34,14 @@ class SwiftMidiCenterTests: XCTestCase {
         }
     }
 
+    func testMidiCenter() throws {
+        print(midiCenter)
+        
+        print("Set setupComit completion")
+        midiCenter.setupCommited = {
+            print(self.midiCenter)
+        }
+        print("Test midicenter.reset()")
+        try midiCenter.reset()
+     }
 }

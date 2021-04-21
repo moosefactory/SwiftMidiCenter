@@ -11,44 +11,7 @@ import SwiftUI
 import Combine
 import SwiftMIDI
 
-public class NewConnectionInfo: Identifiable, ObservableObject, Equatable {
-    public static func == (lhs: NewConnectionInfo, rhs: NewConnectionInfo) -> Bool {
-        return lhs.name == rhs.name
-            && lhs.channels == rhs.channels
-            && lhs.range == rhs.range
-            && lhs.connectionType == rhs.connectionType
-    }
-    
-    public var name: String = "main"
-    public var connectionType: ConnectionType = .packets
-    public var range: MidiRange = MidiRange()
-    public var channels: MidiChannelMask = .all {
-        didSet {
-            objectWillChange.send()
-        }
-    }
-    
-    public var connectionTypeIndex: Int {
-        get {
-            return connectionType.rawValue
-        }
-        set {
-            connectionType = ConnectionType(rawValue: newValue) ?? ConnectionType.packets
-        }
-    }
-    
-    public init(name: String, portType: ConnectionType = .packets, range: MidiRange = MidiRange()) {
-        self.name = name
-        self.connectionType = portType
-        self.range = range
-    }
-    
-    
-}
-
 public typealias MidiCenter = SwiftMidiCenter
-
-
 
 /// MidiCenter
 ///
@@ -73,8 +36,12 @@ public class SwiftMidiCenter: ObservableObject {
     /// The devices registered in system
     /// A registered device does not mean it is online
     
-    @Published public var parc = MidiDeviceParc.shared
+    @Published public var parc = MidiDeviceParc()
 
+    public var deviceConnections: MidiDeviceConnectionSet {
+        MidiDeviceConnectionSet(parc: parc, patchBay: midiBay)
+    }
+    
     /// The changing midi patch bay
     ///
     /// When setup is changed, we first prepare the next patchBay.
@@ -100,6 +67,8 @@ public class SwiftMidiCenter: ObservableObject {
     public var inputPort: InputPort { client.inputPort }
     public var outputPort: OutputPort { client.outputPort }
     
+    public var setupCommited: (()->Void)?
+    
     public var studioFileURL: URL? {
         didSet {
             try? loadStudio()
@@ -113,8 +82,9 @@ public class SwiftMidiCenter: ObservableObject {
         midiBay = studioFile.midiPatchbay
     }
     
+    /// Creates StudioConfig from midi center ( system configuration )
     public func makeStudioData() -> StudioFile {
-        return StudioFile(midiPatchBay: midiBay)
+        return StudioFile(midiCenter: self)
     }
     
     // MARK: - Initialisation
@@ -192,6 +162,16 @@ extension SwiftMidiCenter {
     }
 }
 
+extension SwiftMidiCenter: CustomDebugStringConvertible {
+    public var debugDescription: String {
+        var out = "MidiCenter '\(identifier)'"
+        out += "\r  - Client: \(client)"
+        out += "\r  - Midi PatchBay: \(midiBay)"
+        out += "\r  - Midi Parc: \(parc)"
+        out += "\r  - Connections: \(deviceConnections)"
+        return out
+    }
+}
 #if DEBUG
 
 extension SwiftMidiCenter {

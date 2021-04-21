@@ -7,6 +7,9 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
+		BC3E1B6626301B4C00F5A29D /* Action+NewConnectionInfo.swift in Sources */ = {isa = PBXBuildFile; fileRef = BC3E1B6526301B4C00F5A29D /* Action+NewConnectionInfo.swift */; };
+		BC3E1B6A26301DAA00F5A29D /* MidiPatchBay.swift in Sources */ = {isa = PBXBuildFile; fileRef = BC3E1B6926301DAA00F5A29D /* MidiPatchBay.swift */; };
+		BC3E1B6E2630231100F5A29D /* MidiDeviceParc.swift in Sources */ = {isa = PBXBuildFile; fileRef = BC3E1B6D2630231100F5A29D /* MidiDeviceParc.swift */; };
 		BC59328A2625F9C900056C59 /* SwiftMidiCenter.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = BC5932802625F9C900056C59 /* SwiftMidiCenter.framework */; };
 		BC59328F2625F9C900056C59 /* SwiftMidiCenterTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = BC59328E2625F9C900056C59 /* SwiftMidiCenterTests.swift */; };
 		BC5932912625F9C900056C59 /* SwiftMidiCenter.h in Headers */ = {isa = PBXBuildFile; fileRef = BC5932832625F9C900056C59 /* SwiftMidiCenter.h */; settings = {ATTRIBUTES = (Public, ); }; };
@@ -45,6 +48,9 @@
 /* End PBXContainerItemProxy section */
 
 /* Begin PBXFileReference section */
+		BC3E1B6526301B4C00F5A29D /* Action+NewConnectionInfo.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "Action+NewConnectionInfo.swift"; sourceTree = "<group>"; };
+		BC3E1B6926301DAA00F5A29D /* MidiPatchBay.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MidiPatchBay.swift; sourceTree = "<group>"; };
+		BC3E1B6D2630231100F5A29D /* MidiDeviceParc.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MidiDeviceParc.swift; sourceTree = "<group>"; };
 		BC5932802625F9C900056C59 /* SwiftMidiCenter.framework */ = {isa = PBXFileReference; explicitFileType = wrapper.framework; includeInIndex = 0; path = SwiftMidiCenter.framework; sourceTree = BUILT_PRODUCTS_DIR; };
 		BC5932832625F9C900056C59 /* SwiftMidiCenter.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = SwiftMidiCenter.h; sourceTree = "<group>"; };
 		BC5932842625F9C900056C59 /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = Info.plist; sourceTree = "<group>"; };
@@ -154,6 +160,7 @@
 				BC5932A22625FA5200056C59 /* MidiConnection.swift */,
 				BC5932A32625FA5200056C59 /* Parc */,
 				BC5932A92625FA5200056C59 /* SwiftMidiCenter.swift */,
+				BC3E1B6526301B4C00F5A29D /* Action+NewConnectionInfo.swift */,
 				BC5932AA2625FA5200056C59 /* MidiClient.swift */,
 				BC5932AB2625FA5200056C59 /* MidiCenter+Network.swift */,
 				BC5932AC2625FA5200056C59 /* MidiCenter+Errors.swift */,
@@ -169,9 +176,11 @@
 			children = (
 				BC5932A42625FA5200056C59 /* MidiOutlet.swift */,
 				BC5932A52625FA5200056C59 /* MidiDeviceSet.swift */,
+				BC3E1B6D2630231100F5A29D /* MidiDeviceParc.swift */,
 				BC5932A62625FA5200056C59 /* MidiEntity.swift */,
 				BC5932A72625FA5200056C59 /* MidiDevice.swift */,
 				BC5932A82625FA5200056C59 /* MidiBay.swift */,
+				BC3E1B6926301DAA00F5A29D /* MidiPatchBay.swift */,
 			);
 			path = Parc;
 			sourceTree = "<group>";
@@ -311,6 +320,7 @@
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				BC3E1B6A26301DAA00F5A29D /* MidiPatchBay.swift in Sources */,
 				BC5932C52625FA5200056C59 /* MidiCenter+Errors.swift in Sources */,
 				BC5932C82625FA5200056C59 /* OutputPort.swift in Sources */,
 				BC5932C22625FA5200056C59 /* SwiftMidiCenter.swift in Sources */,
@@ -321,11 +331,13 @@
 				BC5932BC2625FA5200056C59 /* MidiConnection.swift in Sources */,
 				BC5932BB2625FA5200056C59 /* MidiCenter+MidiBay.swift in Sources */,
 				BC5932BF2625FA5200056C59 /* MidiEntity.swift in Sources */,
+				BC3E1B6E2630231100F5A29D /* MidiDeviceParc.swift in Sources */,
 				BC5932B92625FA5200056C59 /* MidiThru.swift in Sources */,
 				BC5932BA2625FA5200056C59 /* MidiWire.swift in Sources */,
 				BC5932C72625FA5200056C59 /* StudioConfig.swift in Sources */,
 				BC5932C42625FA5200056C59 /* MidiCenter+Network.swift in Sources */,
 				BC5932C02625FA5200056C59 /* MidiDevice.swift in Sources */,
+				BC3E1B6626301B4C00F5A29D /* Action+NewConnectionInfo.swift in Sources */,
 				BC5932BE2625FA5200056C59 /* MidiDeviceSet.swift in Sources */,
 				BC5932BD2625FA5200056C59 /* MidiOutlet.swift in Sources */,
 				BC5932CE2625FA5200056C59 /* Connection+Debug.swift in Sources */,

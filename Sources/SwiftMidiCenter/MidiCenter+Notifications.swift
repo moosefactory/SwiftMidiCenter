@@ -54,7 +54,7 @@ extension SwiftMidiCenter {
         let type = object.type.swifty
         withBay(for: type) { bay in
             if let outlet = bay.outlet(with: object.ref) {
-                outlet.available = true
+                //outlet.available = true
             } else {
                 let newOutlet = MidiOutlet(ref: object.ref, isInput: type.isSource)
                 bay.outlets.append(newOutlet)
@@ -65,12 +65,14 @@ extension SwiftMidiCenter {
     /// A midi input is not available anymore
     func didRemove(_ object: SwiftMIDI.Notification.Object) {
         withBay(for: object.type.swifty) { bay in
-            bay.outlet(with: object.ref)?.available = false
+            //bay.outlet(with: object.ref)?.available = false
         }
     }
 
     /// The setup changed notification is the last, we use it to commit our changes.
     func commitSetUp() {
         midiBay = changingMidiBay
+        deviceConnections.attach(to: midiBay)
+        setupCommited?()
     }
 }
