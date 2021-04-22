@@ -74,5 +74,6 @@ extension SwiftMidiCenter {
         midiBay = changingMidiBay
         deviceConnections.attach(to: midiBay)
         setupCommited?()
+        client.setupCommited?()
     }
 }

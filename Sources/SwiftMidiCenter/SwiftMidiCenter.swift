@@ -139,14 +139,14 @@ public class SwiftMidiCenter: ObservableObject {
         }
     }
     
-    public func newConnection(inputOutlets: [MidiOutlet], outputOutlets: [MidiOutlet], filter: MidiFilterSettings) -> MidiConnection {
+    public func newConnection(inputOutlets: [MidiOutlet], outputOutlets: [MidiOutlet], filter: MidiFilterSettings) throws -> MidiConnection {
         let cnx = MidiConnection(name: "Connection",
                                  filter: filter,
                                  inputPort: inputPort,
                                  outputPort: outputPort,
                                  sources: inputOutlets,
                                  destinations: outputOutlets)
-        client.addConnection(cnx, in: inputPort)
+        try client.addConnection(cnx, in: inputPort)
         return cnx
     }
 }

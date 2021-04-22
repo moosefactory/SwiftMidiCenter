@@ -195,7 +195,7 @@ public final class MidiConnection: MidiWire, Codable, ObservableObject {
     
     /// Transfer packets from sources to destinations, applying filter
     public func transfer(packetList: UnsafePointer<MIDIPacketList>) {
-        guard !sources.isEmpty && !destinations.isEmpty else {
+        guard !sources.isEmpty && (!destinations.isEmpty || eventsTap != nil)  else {
             return
         }
 
@@ -215,9 +215,9 @@ public final class MidiConnection: MidiWire, Codable, ObservableObject {
         
             // Debug
             #if DEBUG
-//                DispatchQueue.main.async {
-//                    self.debugLog(filterOutput: filterOutput)
-//                }
+                DispatchQueue.main.async {
+                    self.debugLog(filterOutput: filterOutput)
+                }
             #endif
         }
         

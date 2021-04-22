@@ -93,15 +93,27 @@ public class InputPort: MidiPort {
     ///
     /// An outlet can be connected once to an input port.
     
-    public func connect(identifier: String, outlet: MidiOutlet) throws {
-        guard !inputConnections.map({ $0.outlet }).contains(outlet) else {
+    @discardableResult
+    public func connect(identifier: String, outlet: MidiOutlet) throws -> InputPortConnection {
+        if let connection = connectionForOutlet(outlet) {
+            return connection
+        }
+        guard !isOutletAlreadyConnected(outlet) else {
             throw MidiCenter.Errors.inputOutletWithSameIdentifierAlreadyExists
         }
-        let input = try InputPortConnection(identifier: identifier, port: self, source: outlet)
-        inputConnections.append(input)
+        let inputConnection = try InputPortConnection(identifier: identifier, port: self, source: outlet)
+        inputConnections.append(inputConnection)
         objectWillChange.send()
+        return inputConnection
     }
     
+    public func connectionForOutlet(_ outlet: MidiOutlet) -> InputPortConnection? {
+        inputConnections.first(where: { $0.outlet == outlet })
+    }
+    
+    public func isOutletAlreadyConnected(_ outlet: MidiOutlet) -> Bool {
+        inputConnections.map({ $0.outlet }).contains(outlet)
+    }
     
     /// Unplug the port from an outlet
     

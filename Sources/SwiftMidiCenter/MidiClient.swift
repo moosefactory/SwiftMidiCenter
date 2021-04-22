@@ -37,6 +37,8 @@ public typealias MidiEventsReadBlock = (UnsafePointer<MIDIPacketList>, [MidiEven
 
 public class MidiClient: ObservableObject {
     
+    public var setupCommited: (()->Void)?
+
     /// The CoreMidi client refcon
     public private(set) var ref: MIDIClientRef = 0
     
@@ -89,7 +91,6 @@ public class MidiClient: ObservableObject {
         
         inputPort = try openInputPortWithPacketsReader(name: "in", type: .packets, readBlock: readBlock)
         outputPort = try OutputPort(client: self, name: "out")
-        
     }
     
     public func openDefaultPorts() throws {
@@ -102,6 +103,7 @@ public class MidiClient: ObservableObject {
     func receive(packets: UnsafePointer<MIDIPacketList>, refCon: UnsafeMutableRawPointer?) {
         
     }
+    
     
     public var customReceiveBlock: MIDIReadBlock?
     
@@ -147,9 +149,11 @@ public class MidiClient: ObservableObject {
     }
     
     public func openInputPortWithPacketsReader(name: String = "mainIn", type: ConnectionType, readBlock: @escaping MIDIReadBlock) throws -> InputPort {
-        
+        //print("[INPUT PORT] Init '\(name)' - type : \(type)")
         let inputPort = try InputPort(client: self, type: type , name: name) { packetList, refCon in
-            
+            var refCon = refCon
+            //print("[INPUT PORT] Receive '\(name) - refCon : \(refCon)")
+
             if let receiveBlock = self.customReceiveBlock {
                 receiveBlock(packetList, refCon)
             }
@@ -159,8 +163,9 @@ public class MidiClient: ObservableObject {
             }
             
             self.connections.forEach { connection in
-                // Only transfer if outlet is set in the connection
+//                // Only transfer if outlet is set in the connection
                 if connection.sources.contains(cnxRefCon.outlet) {
+                //print("[INPUT PORT] Transfer to \(connection.name)")
                     connection.transfer(packetList: packetList)
                 }
             }
@@ -171,7 +176,13 @@ public class MidiClient: ObservableObject {
     
     // MARK: - Connections
     
-    func createConnection(port: InputPort, type: ConnectionType, name: String) throws {
+    public func createMidiInputConnection(type: ConnectionType, sourceOutlet: MidiOutlet) throws -> MidiConnection {
+        try createConnection(port: inputPort, type: type, sourceOutlet: sourceOutlet)
+    }
+
+    public func createConnection(port: InputPort, type: ConnectionType, name: String? = nil, sourceOutlet: MidiOutlet? = nil) throws -> MidiConnection {
+        
+        let name = name ?? sourceOutlet?.name ?? "Unnamed Input"
         var ct = MidiEventTypeMask.all
         switch type {
         case .packets:
@@ -188,23 +199,25 @@ public class MidiClient: ObservableObject {
         
         let filter = MidiFilterSettings(channels: .all, eventTypes: ct)
 
+        let sources = [sourceOutlet].compactMap {$0}
         let connection = MidiConnection(name: name, filter: filter,
                                         inputPort: port, outputPort: outputPort,
-                                        sources: [], destinations: [])
+                                        sources: sources, destinations: [])
         connection.inputOutletsDidChange = { changes in
             self.usedInputsDidChange(changes: changes)
         }
         connection.outputOutletsDidChange = { connection in
             //self.client.connectionDidChange(connection: connection)
         }
-        addConnection(connection, in: port)
+        try addConnection(connection, in: port)
+        return connection
     }
     
     /// Adds a connection from outlet to outlet in the given port
     
-    public func addConnection(_ connection: MidiConnection, in port: InputPort) {
-        connection.sources.forEach {
-            try? port.connect(identifier: connection.uuid.uuidString, outlet: $0)
+    public func addConnection(_ connection: MidiConnection, in port: InputPort) throws {
+        try connection.sources.forEach {
+            try port.connect(identifier: connection.uuid.uuidString, outlet: $0)
         }
         connections.append(connection)
         objectWillChange.send()
