@@ -256,7 +256,7 @@ public final class MidiConnection: MidiWire, Codable, ObservableObject {
     
     // Send MidiEvents ( No filtering )
     public func send(events: [MidiEvent]) throws {
-        guard var packets = events.asPacketList else { return }
+        guard var packets = events.asPacketList() else { return }
         destinations.forEach { destination in
             do {
                 try SwiftMIDI.send(port: outputPort!.ref, destination: destination.ref, packetListPointer: &packets)
