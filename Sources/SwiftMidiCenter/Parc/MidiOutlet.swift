@@ -169,9 +169,13 @@ extension MidiOutlet: Hashable {
 
 extension MidiOutlet: CustomStringConvertible {
 
+    public var ioString: String {
+        isInput ? "Input" : "Output"
+    }
+    
     public var description: String {
         let avail = available ? "Available" : "Not Available"
-        let ioString = isInput ? "Input" : "Output"
-        return "\(ioString) Outlet '\(name)' id: \(uniqueID) - ref:\(ref) | '\(_displayName ?? "")' - \(avail) - CNX: \(connectionID)"
+        let shortUUID = String(uuid.uuidString.prefix(8))
+        return "\r\(ioString) Outlet '\(name)'\r    \(shortUUID)… id: \(uniqueID) - ref:\(ref)\r    display:'\(_displayName ?? "")' - \(avail) - Connection: \(connectionID)"
     }
 }

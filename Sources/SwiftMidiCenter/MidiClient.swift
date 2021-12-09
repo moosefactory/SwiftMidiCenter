@@ -144,15 +144,16 @@ public class MidiClient: ObservableObject {
     
     // MARK: - Input Midi Ports
     
-    public func newConnection(with info: NewConnectionInfo) throws {
+    @discardableResult
+    public func newConnection(with info: NewConnectionInfo) throws -> MidiConnection {
         try createConnection(port: inputPort, type: info.connectionType, name: info.name)
     }
     
     public func openInputPortWithPacketsReader(name: String = "mainIn", type: ConnectionType, readBlock: @escaping MIDIReadBlock) throws -> InputPort {
-        //print("[INPUT PORT] Init '\(name)' - type : \(type)")
+//        print("[INPUT PORT] Init '\(name)' - type : \(type)")
         let inputPort = try InputPort(client: self, type: type , name: name) { packetList, refCon in
-            var refCon = refCon
-            //print("[INPUT PORT] Receive '\(name) - refCon : \(refCon)")
+            
+//            print("[INPUT PORT] Receive '\(name) - refCon : \(refCon)")
 
             if let receiveBlock = self.customReceiveBlock {
                 receiveBlock(packetList, refCon)
@@ -166,10 +167,13 @@ public class MidiClient: ObservableObject {
 //                // Only transfer if outlet is set in the connection
                 if connection.sources.contains(cnxRefCon.outlet) {
                 //print("[INPUT PORT] Transfer to \(connection.name)")
-                    connection.transfer(packetList: packetList)
+                    if connection.destinations.count > 0 {
+                        connection.transfer(packetList: packetList)
+                    }
                 }
             }
-            readBlock(packetList, refCon)
+            
+            //readBlock(packetList, refCon)
         }
         return inputPort
     }
@@ -237,7 +241,11 @@ public class MidiClient: ObservableObject {
     func usedInputsDidChange(changes: MidiWireChangeParams<MidiConnection>) {
         
         changes.addedInputOutlets.forEach {
-            try? inputPort.connect(identifier: changes.wire.uuid.uuidString, outlet: $0)
+            do {
+                try inputPort.connect(identifier: changes.wire.uuid.uuidString, outlet: $0)
+            } catch {
+                print("Cant connect outlet $0")
+            }
         }
         changes.removedInputOutlets.forEach {
             try? inputPort.disconnect(outlet: $0)

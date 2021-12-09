@@ -214,11 +214,11 @@ public final class MidiConnection: MidiWire, Codable, ObservableObject {
             lastRealTimeMessage = filterOutput.realTimeMessage
         
             // Debug
-            #if DEBUG
+            //#if DEBUG
                 DispatchQueue.main.async {
                     self.debugLog(filterOutput: filterOutput)
                 }
-            #endif
+            //#endif
         }
         
         

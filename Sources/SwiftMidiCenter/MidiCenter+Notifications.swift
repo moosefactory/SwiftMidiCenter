@@ -54,6 +54,7 @@ extension SwiftMidiCenter {
         let type = object.type.swifty
         withBay(for: type) { bay in
             if let outlet = bay.outlet(with: object.ref) {
+                print("Did add outlet \(outlet)")
                 //outlet.available = true
             } else {
                 let newOutlet = MidiOutlet(ref: object.ref, isInput: type.isSource)

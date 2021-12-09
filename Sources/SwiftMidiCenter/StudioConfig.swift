@@ -9,7 +9,7 @@ import Foundation
 import CoreMIDI
 import SwiftMIDI
 
-public final class StudioFile: Codable {
+public final class StudioFile: Codable, ObservableObject {
     
     public struct Notifications {
         // Use this notification when changing studio config in client application
@@ -18,6 +18,8 @@ public final class StudioFile: Codable {
     
     // The keys used in the change notification dictionary
     public struct Keys {
+        /// Sent when the user changes the clock source
+        public static let clockSource = "clockSource"
         /// Sent when the user adds or removes clock destinations
         public static let clockDestinations = "clockDestinations"
         /// Sent when the user select the outputs he needs in his project
@@ -41,19 +43,28 @@ public final class StudioFile: Codable {
 
     // User configuration
     
-    public var clockDestinations: [MidiOutlet] {
+    @Published public var clockSource: MidiOutlet? {
+        didSet {
+            NotificationCenter.default.post(name: Notifications.changed,
+                                            object: self,
+                                            userInfo: clockSource == nil ? [:] : [Keys.clockSource: clockSource!])
+        }
+    }
+
+    @Published public var clockDestinations: [MidiOutlet] {
         didSet {
             NotificationCenter.default.post(name: Notifications.changed, object: self, userInfo: [Keys.clockDestinations: clockDestinations])
         }
     }
     
-    public var usedOutputUUIDs: [UUID] {
+
+    @Published public var usedOutputUUIDs: [UUID] {
         didSet {
             NotificationCenter.default.post(name: Notifications.changed, object: self, userInfo: [Keys.usedOutputs: usedOutputs])
         }
     }
 
-    public var usedInputUUIDs: [UUID] {
+    @Published public var usedInputUUIDs: [UUID] {
         didSet {
             NotificationCenter.default.post(name: Notifications.changed, object: self, userInfo: [Keys.usedInputs: usedInputs])
         }
@@ -74,6 +85,7 @@ public final class StudioFile: Codable {
         case uuid
         case midiPatchbay
         case entities
+        case clockSource
         case clockDestinations
         case usedOutputUUIDs = "usedOutputs"
         case usedInputUUIDs = "usedInputs"
@@ -99,6 +111,7 @@ public final class StudioFile: Codable {
 
         midiPatchbay = (try? values.decode(MidiPatchBay.self, forKey: .midiPatchbay)) ?? MidiPatchBay()
         entities = (try? values.decode([MidiEntity].self, forKey: .entities)) ?? []
+        clockSource = (try? values.decode(MidiOutlet.self, forKey: .clockSource))
         clockDestinations = (try? values.decode([MidiOutlet].self, forKey: .clockDestinations)) ?? []
         usedInputUUIDs = (try? values.decode([UUID].self, forKey: .usedInputUUIDs)) ?? []
         usedOutputUUIDs = (try? values.decode([UUID].self, forKey: .usedOutputUUIDs)) ?? []
@@ -112,6 +125,7 @@ public final class StudioFile: Codable {
 
         try container.encode(midiPatchbay, forKey: .midiPatchbay)
         try container.encode(entities, forKey: .entities)
+        try container.encode(clockSource, forKey: .clockSource)
         try container.encode(clockDestinations, forKey: .clockDestinations)
         try container.encode(usedInputUUIDs, forKey: .usedInputUUIDs)
         try container.encode(usedOutputUUIDs, forKey: .usedOutputUUIDs)

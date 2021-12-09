@@ -89,6 +89,7 @@ public class SwiftMidiCenter: ObservableObject {
     
     // MARK: - Initialisation
     
+    
     public init(identifier: String, studioFileURL: URL? = nil) {
         self.identifier = identifier
         
@@ -165,7 +166,7 @@ extension SwiftMidiCenter {
 extension SwiftMidiCenter: CustomDebugStringConvertible {
     public var debugDescription: String {
         var out = "MidiCenter '\(identifier)'"
-        out += "\r  - Client: \(client)"
+        out += "\r  - Client: \(client == nil ? "<none>" : client.description)"
         out += "\r  - Midi PatchBay: \(midiBay)"
         out += "\r  - Midi Parc: \(parc)"
         out += "\r  - Connections: \(deviceConnections)"

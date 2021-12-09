@@ -127,9 +127,10 @@ public extension MidiConnection {
             
         // Log activated note range
             
-        let rangesString = (noteRanges.enumerated().map { "CH\($0.offset) : \($0.element)" }).joined(separator: " ")
-        print("Channels: \(channelsString)")
-            if !noteRanges.isEmpty { print("Notes: \(rangesString)") }
+//        let rangesString = (noteRanges.enumerated().map { "CH\($0.offset) : \($0.element)" }).joined(separator: " ")
+            
+//        print("Channels: \(channelsString)")
+//        if !noteRanges.isEmpty { print("Notes: \(rangesString)") }
         
         }
     }
