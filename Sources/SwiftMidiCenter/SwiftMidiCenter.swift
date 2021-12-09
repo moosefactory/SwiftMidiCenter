@@ -97,7 +97,13 @@ public class SwiftMidiCenter: ObservableObject {
         
         do {
             // Creates a midi client with a default input port
-            client = try MidiClient(midiCenter: self, name: "defaultClient") { _, _ in }
+            client = try MidiClient(midiCenter: self, name: "defaultClient") { packetList, refCon in
+                
+                // We capture allevents
+                MidiEventsDecoder().unpackEvents(packetList) {
+                    print($0)
+                }
+            }
             try initMidi()
             do {
                 let connections = try SwiftMIDI.findMidiThruConnections(owner: "")
@@ -158,8 +164,16 @@ extension SwiftMidiCenter {
         midiBay.input.outlet(with: uuid)
     }
     
+    func input(withUniqueID id: Int) -> MidiOutlet? {
+        midiBay.input.outlet(withUniqueID: id)
+    }
+
     func output(with uuid: UUID) -> MidiOutlet? {
         midiBay.output.outlet(with: uuid)
+    }
+
+    func output(withUniqueID id: Int) -> MidiOutlet? {
+        midiBay.output.outlet(withUniqueID: id)
     }
 }
 

@@ -86,6 +86,10 @@ final public class MidiBay: ObservableObject, Codable {
         outlets.first(where: {$0.ref == ref})
     }
 
+    func outlet(withUniqueID uniqueID: Int) -> MidiOutlet? {
+        outlets.first(where: {$0.uniqueID == uniqueID})
+    }
+
     public func index(of outlet: MidiOutlet) -> Int? {
         return outlets.firstIndex(of: outlet)
     }

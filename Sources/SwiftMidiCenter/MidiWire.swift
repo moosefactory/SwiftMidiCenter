@@ -66,15 +66,70 @@ extension MidiWire {
 // MARK: - Access with outlet identifiers
 
 extension MidiWire {
-    
-    public var sourceIdentifiers: Set<UUID> {
-        get { Set(sources.map { $0.uuid }) }
+//
+//    public var sourceIdentifiers: Set<UUID> {
+//        get { Set(sources.map { $0.uuid }) }
+//        set {
+//            var sources = [MidiOutlet]()
+//            var addedSources = [MidiOutlet]()
+//            var removedSources = [MidiOutlet]()
+//            newValue.forEach { identifier in
+//                if let outlet = MidiCenter.shared.input(with: identifier) {
+//                    sources.append(outlet)
+//                    if !self.sources.contains(outlet) {
+//                        addedSources.append(outlet)
+//                    }
+//                }
+//            }
+//            self.sources.forEach {
+//                if !sources.contains($0) {
+//                    removedSources.append($0)
+//                }
+//            }
+//            self.sources = sources
+//            inputOutletsDidChange?(MidiWireChangeParams<Self>(wire: self,
+//                                                              addedInputOutlets: addedSources,
+//                                                              removedInputOutlets: removedSources))
+//        }
+//    }
+//
+//    public var destinationIdentifiers: Set<UUID> {
+//        get { Set(destinations.map { $0.uuid }) }
+//        set {
+//            var destinations = [MidiOutlet]()
+//            var addedDestinations = [MidiOutlet]()
+//            var removedDestinations = [MidiOutlet]()
+//
+//            newValue.forEach { identifier in
+//                if let outlet = MidiCenter.shared.output(with: identifier) {
+//                    destinations.append(outlet)
+//                    if !self.destinations.contains(outlet) {
+//                        addedDestinations.append(outlet)
+//                    }
+//                }
+//            }
+//            self.destinations.forEach {
+//                if !destinations.contains($0) {
+//                    removedDestinations.append($0)
+//                }
+//            }
+//
+//            self.destinations = destinations
+//            outputOutletsDidChange?(MidiWireChangeParams<Self>(wire: self,
+//                                                               addedInputOutlets: addedDestinations,
+//                                                               removedInputOutlets: removedDestinations))
+//        }
+//    }
+//
+//
+    public var sourceUniqueIDs: Set<Int> {
+        get { Set(sources.map { $0.uniqueID }) }
         set {
             var sources = [MidiOutlet]()
             var addedSources = [MidiOutlet]()
             var removedSources = [MidiOutlet]()
-            newValue.forEach { identifier in
-                if let outlet = MidiCenter.shared.input(with: identifier) {
+            newValue.forEach { uniqueID in
+                if let outlet = MidiCenter.shared.input(withUniqueID: uniqueID) {
                     sources.append(outlet)
                     if !self.sources.contains(outlet) {
                         addedSources.append(outlet)
@@ -93,15 +148,15 @@ extension MidiWire {
         }
     }
     
-    public var destinationIdentifiers: Set<UUID> {
-        get { Set(destinations.map { $0.uuid }) }
+    public var destinationUniqueIDs: Set<Int> {
+        get { Set(destinations.map { $0.uniqueID }) }
         set {
             var destinations = [MidiOutlet]()
             var addedDestinations = [MidiOutlet]()
             var removedDestinations = [MidiOutlet]()
 
-            newValue.forEach { identifier in
-                if let outlet = MidiCenter.shared.output(with: identifier) {
+            newValue.forEach { id in
+                if let outlet = MidiCenter.shared.output(withUniqueID: id) {
                     destinations.append(outlet)
                     if !self.destinations.contains(outlet) {
                         addedDestinations.append(outlet)
