@@ -37,7 +37,7 @@ import SwiftMIDI
 // TODO: Change to MidiConnection subclass and understand why it does not work on MacOS 11.1 Big Sur
 
 /// MidiThru objects establish a connection between a source and a destination
-public final class MidiThru: Codable, ObservableObject, MidiWire, Identifiable {
+public final class MidiThru: Codable, ObservableObject, MidiOutletsConnection, Identifiable {
     
     public var inputOutletsDidChange: ((MidiWireChangeParams<MidiThru>) -> Void)?
     

@@ -85,7 +85,7 @@ public class MidiDevice: Codable, MidiObject {
     
     public private(set) var uuid = UUID()
     
-    /// The device name
+    /// The device name in system
     
     public private(set) var name: String
     

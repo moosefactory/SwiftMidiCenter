@@ -38,7 +38,7 @@ import SwiftMIDI
 ///
 /// Connection has a midi filter that makes a lot of work to sort midi packets and extract usefull information
 
-public final class MidiConnection: MidiWire, Codable, ObservableObject {
+public final class MidiConnection: MidiOutletsConnection, Codable, ObservableObject {
     
     public struct ChangeParams {
         var connection: MidiConnection

@@ -150,10 +150,10 @@ public class MidiClient: ObservableObject {
     }
     
     public func openInputPortWithPacketsReader(name: String = "mainIn", type: ConnectionType, readBlock: @escaping MIDIReadBlock) throws -> InputPort {
-//        print("[INPUT PORT] Init '\(name)' - type : \(type)")
+        print("[INPUT PORT] Init '\(name)' - type : \(type)")
         let inputPort = try InputPort(client: self, type: type , name: name) { packetList, refCon in
             
-//            print("[INPUT PORT] Receive '\(name) - refCon : \(refCon)")
+            print("[INPUT PORT] Receive '\(name) - refCon : \(refCon)")
 
             if let receiveBlock = self.customReceiveBlock {
                 receiveBlock(packetList, refCon)
@@ -166,14 +166,14 @@ public class MidiClient: ObservableObject {
             self.connections.forEach { connection in
 //                // Only transfer if outlet is set in the connection
                 if connection.sources.contains(cnxRefCon.outlet) {
-                //print("[INPUT PORT] Transfer to \(connection.name)")
+                print("[INPUT PORT] Transfer to \(connection.name) filter")
                     if connection.destinations.count > 0 {
                         connection.transfer(packetList: packetList)
                     }
                 }
             }
             
-            //readBlock(packetList, refCon)
+            readBlock(packetList, refCon)
         }
         return inputPort
     }

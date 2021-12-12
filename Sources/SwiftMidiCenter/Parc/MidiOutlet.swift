@@ -154,6 +154,7 @@ public class MidiOutlet: Codable, MidiObject {
     func connections() {
         //err = MIDIObjectGetDataProperty(endpoint, kMIDIPropertyConnectionUniqueID, &connections);
     }
+    
 }
 
 extension MidiOutlet: Hashable {
