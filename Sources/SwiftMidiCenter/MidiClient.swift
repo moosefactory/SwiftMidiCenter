@@ -38,7 +38,7 @@ public typealias MidiEventsReadBlock = (UnsafePointer<MIDIPacketList>, [MidiEven
 public class MidiClient: ObservableObject {
     
     public var setupCommited: (()->Void)?
-
+    
     /// The CoreMidi client refcon
     public private(set) var ref: MIDIClientRef = 0
     
@@ -67,7 +67,7 @@ public class MidiClient: ObservableObject {
     
     // MARK: Debug options
     
-    #if DEBUG
+#if DEBUG
     
     /// Log Notifications
     var logNotifications: Bool = true
@@ -75,7 +75,7 @@ public class MidiClient: ObservableObject {
     /// Log MidiEvents
     var logEvents: Bool = true
     
-    #endif
+#endif
     
     /// A weak reference to the MidiCenter, to update the midi patch bay when setup is changed,
     /// and to determine the reverse path identifier for newly created objects
@@ -111,14 +111,14 @@ public class MidiClient: ObservableObject {
     
     private func notifyBlock(_ notificationPointer: UnsafePointer<MIDINotification>) {
         guard let notification = SwiftMIDI.Notification.make(with: notificationPointer) else { return }
-        #if DEBUG
+#if DEBUG
         if logEvents {
             self.log(notification: notification)
         }
-        #endif
+#endif
         
         switch notification {
-        
+            
         case is SwiftMIDI.Notification.ObjectAdded:
             let object = (notification as! SwiftMIDI.Notification.ObjectAdded).object
             midiCenter?.didAdd(object)
@@ -127,7 +127,7 @@ public class MidiClient: ObservableObject {
             let object = (notification as! SwiftMIDI.Notification.ObjectRemoved).object
             midiCenter?.didRemove(object)
             
-        /// Last notification, we commit the setup
+            /// Last notification, we commit the setup
         case is SwiftMIDI.Notification.SetUpChanged:
             midiCenter?.commitSetUp()
             
@@ -149,12 +149,16 @@ public class MidiClient: ObservableObject {
         try createConnection(port: inputPort, type: info.connectionType, name: info.name)
     }
     
-    public func openInputPortWithPacketsReader(name: String = "mainIn", type: ConnectionType, readBlock: @escaping MIDIReadBlock) throws -> InputPort {
+    public func openInputPortWithPacketsReader(name: String = "mainIn",
+                                               type: ConnectionType,
+                                               readBlock: @escaping MIDIReadBlock) throws -> InputPort {
         print("[INPUT PORT] Init '\(name)' - type : \(type)")
         let inputPort = try InputPort(client: self, type: type , name: name) { packetList, refCon in
             
-            print("[INPUT PORT] Receive '\(name) - refCon : \(refCon)")
-
+#if DEBUG
+            var out = "[INPUT] '\(name) - refCon : \(refCon == nil ? "none" : "\(refCon)")"
+            print(out)
+#endif
             if let receiveBlock = self.customReceiveBlock {
                 receiveBlock(packetList, refCon)
             }
@@ -164,14 +168,29 @@ public class MidiClient: ObservableObject {
             }
             
             self.connections.forEach { connection in
-//                // Only transfer if outlet is set in the connection
+                // Only transfer if outlet is set in the connection
                 if connection.sources.contains(cnxRefCon.outlet) {
-                print("[INPUT PORT] Transfer to \(connection.name) filter")
-                    if connection.destinations.count > 0 {
-                        connection.transfer(packetList: packetList)
+                    if connection.destinations.count >= 0 {
+                        let filterOutput: MidiPacketsFilter.Output? = connection.transfer(packetList: packetList)
+#if DEBUG
+                        //out += "\r[INPUT]   > \(connection.name) > "
+                        print("\r[INPUT] \(connection.name) > ")
+                        connection.debugLog(filterOutput: filterOutput)
+#endif
+
+                    }
+                    else {
+#if DEBUG
+                    //out += "\r[INPUT]   > no destinations"
+                    print("\r[INPUT] \(connection.name) > no destinations")
+#endif
                     }
                 }
             }
+#if DEBUG
+            //print(out)
+            #endif
+            //
             
             readBlock(packetList, refCon)
         }
@@ -183,7 +202,7 @@ public class MidiClient: ObservableObject {
     public func createMidiInputConnection(type: ConnectionType, sourceOutlet: MidiOutlet) throws -> MidiConnection {
         try createConnection(port: inputPort, type: type, sourceOutlet: sourceOutlet)
     }
-
+    
     public func createConnection(port: InputPort, type: ConnectionType, name: String? = nil, sourceOutlet: MidiOutlet? = nil) throws -> MidiConnection {
         
         let name = name ?? sourceOutlet?.name ?? "Unnamed Input"
@@ -202,7 +221,7 @@ public class MidiClient: ObservableObject {
         }
         
         let filter = MidiFilterSettings(channels: .all, eventTypes: ct)
-
+        
         let sources = [sourceOutlet].compactMap {$0}
         let connection = MidiConnection(name: name, filter: filter,
                                         inputPort: port, outputPort: outputPort,
@@ -237,7 +256,7 @@ public class MidiClient: ObservableObject {
         }
         objectWillChange.send()
     }
-
+    
     func usedInputsDidChange(changes: MidiWireChangeParams<MidiConnection>) {
         
         changes.addedInputOutlets.forEach {

@@ -57,25 +57,24 @@ public final class StudioFile: Codable, ObservableObject {
         }
     }
     
-    @Published public var usedOutputUniqueIDs: [Int] {
+    @Published public var usedOutputUUIDs: [UUID] {
         didSet {
             NotificationCenter.default.post(name: Notifications.changed, object: self, userInfo: [Keys.usedOutputs: usedOutputs])
         }
     }
     
-    @Published public var usedInputUniqueIDs: [Int] {
+    @Published public var usedInputUUIDs: [UUID] {
         didSet {
             NotificationCenter.default.post(name: Notifications.changed, object: self, userInfo: [Keys.usedOutputs: usedOutputs])
         }
     }
 
-
     public var usedInputs: [MidiOutlet] {
-        return usedInputUniqueIDs.compactMap { midiPatchbay.input.outlet(withUniqueID: $0) }
+        return usedInputUUIDs.compactMap { midiPatchbay.input.outlet(with: $0) }
     }
     
     public var usedOutputs: [MidiOutlet] {
-        return usedOutputUniqueIDs.compactMap { midiPatchbay.output.outlet(withUniqueID: $0) }
+        return usedOutputUUIDs.compactMap { midiPatchbay.output.outlet(with: $0) }
     }
     
     // MARK: - JSON Keys
@@ -87,10 +86,8 @@ public final class StudioFile: Codable, ObservableObject {
         case entities
         case clockSource
         case clockDestinations
-        //case usedOutputUUIDs = "usedOutputs"
-        //case usedInputUUIDs = "usedInputs"
-        case usedOutputUniqueIDs
-        case usedInputUniqueIDs
+        case usedOutputUUIDs = "usedOutputs"
+        case usedInputUUIDs = "usedInputs"
     }
     
     // MARK: - Initialisation
@@ -99,11 +96,8 @@ public final class StudioFile: Codable, ObservableObject {
         self.midiPatchbay = midiCenter.midiBay
         self.entities = midiCenter.entities
         self.clockDestinations = [MidiOutlet]()
-        //self.usedInputUUIDs = midiCenter.deviceConnections.connections.values.compactMap { $0.outlet?.uuid }
-//        self.usedInputUniqueIDs = midiCenter.deviceConnections.connections.values.compactMap { $0.outlet?.uniqueID }
-        //self.usedOutputUUIDs = midiCenter.deviceConnections.connections.values.compactMap { $0.outlet?.uuid }
-        self.usedOutputUniqueIDs = midiCenter.deviceConnections.connections.values.compactMap { $0.outlet?.uniqueID }
-        self.usedInputUniqueIDs = midiCenter.deviceConnections.connections.values.compactMap { $0.outlet?.uniqueID }
+        self.usedInputUUIDs = midiCenter.deviceConnections.connections.values.compactMap { $0.outlet?.uuid }
+        self.usedOutputUUIDs = midiCenter.deviceConnections.connections.values.compactMap { $0.outlet?.uuid }
     }
     
     // MARK: - JSON Encoding/Decoding
@@ -118,10 +112,8 @@ public final class StudioFile: Codable, ObservableObject {
         entities = (try? values.decode([MidiEntity].self, forKey: .entities)) ?? []
         clockSource = (try? values.decode(MidiOutlet.self, forKey: .clockSource))
         clockDestinations = (try? values.decode([MidiOutlet].self, forKey: .clockDestinations)) ?? []
-//        usedInputUUIDs = (try? values.decode([UUID].self, forKey: .usedInputUUIDs)) ?? []
-//        usedOutputUUIDs = (try? values.decode([UUID].self, forKey: .usedOutputUUIDs)) ?? []
-        usedOutputUniqueIDs = (try? values.decode([Int].self, forKey: .usedOutputUniqueIDs)) ?? []
-        usedInputUniqueIDs = (try? values.decode([Int].self, forKey: .usedInputUniqueIDs)) ?? []
+        usedInputUUIDs = (try? values.decode([UUID].self, forKey: .usedInputUUIDs)) ?? []
+        usedOutputUUIDs = (try? values.decode([UUID].self, forKey: .usedOutputUUIDs)) ?? []
     }
     
     public func encode(to encoder: Encoder) throws {
@@ -134,10 +126,8 @@ public final class StudioFile: Codable, ObservableObject {
         try container.encode(entities, forKey: .entities)
         try container.encode(clockSource, forKey: .clockSource)
         try container.encode(clockDestinations, forKey: .clockDestinations)
-//        try container.encode(usedInputUUIDs, forKey: .usedInputUUIDs)
-//        try container.encode(usedOutputUUIDs, forKey: .usedOutputUUIDs)
-        try container.encode(usedOutputUniqueIDs, forKey: .usedOutputUniqueIDs)
-        try container.encode(usedInputUniqueIDs, forKey: .usedInputUniqueIDs)
+        try container.encode(usedInputUUIDs, forKey: .usedInputUUIDs)
+        try container.encode(usedOutputUUIDs, forKey: .usedOutputUUIDs)
     }
 
     // MARK: - Notification

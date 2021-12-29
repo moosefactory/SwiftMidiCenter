@@ -35,8 +35,11 @@ import SwiftMIDI
 
 public extension MidiConnection {
     
-    func debugLog(filterOutput: MidiPacketsFilter.Output) {
+    func debugLog(filterOutput: MidiPacketsFilter.Output?) {
         
+        guard let filterOutput = filterOutput else {
+            return
+        }
         // Log realtime message
         
         if filterOutput.realTimeMessage != .none {

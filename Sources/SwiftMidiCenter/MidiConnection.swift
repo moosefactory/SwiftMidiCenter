@@ -62,7 +62,11 @@ public final class MidiConnection: MidiOutletsConnection, Codable, ObservableObj
     /// The connected input outlet
     @Published public var sources: [MidiOutlet]
     /// The connected output outlet
-    @Published public var destinations: [MidiOutlet]
+    @Published public var destinations: [MidiOutlet] {
+        didSet {
+            print("Destinations changed : \(destinations)")
+        }
+    }
     
     // MARK: - Input Transform
     
@@ -194,35 +198,31 @@ public final class MidiConnection: MidiOutletsConnection, Codable, ObservableObj
     // MARK: - Packet transfer
     
     /// Transfer packets from sources to destinations, applying filter
-    public func transfer(packetList: UnsafePointer<MIDIPacketList>) {
+    public func transfer(packetList: UnsafePointer<MIDIPacketList>) -> MidiPacketsFilter.Output? {
         guard !sources.isEmpty && (!destinations.isEmpty || eventsTap != nil)  else {
-            return
+            return nil
         }
 
         var packets: MIDIPacketList?
+        var filterOutput: MidiPacketsFilter.Output? = nil
         
         if filter.settings.willPassThrough {
             packets = packetList.pointee
         } else {
-            let filterOutput = filter.filter(packetList: packetList)
-            packets = filterOutput.packets
+            let output = filter.filter(packetList: packetList)
+            packets = output.packets
             
             // Add ticks to connection counter
-            self.ticks += Int(filterOutput.ticks)
+            self.ticks += Int(output.ticks)
             
             // Save last real time message ( excepted clock - Start, Continue, Stop)
-            lastRealTimeMessage = filterOutput.realTimeMessage
-        
-            // Debug
-            //#if DEBUG
-                DispatchQueue.main.async {
-                    self.debugLog(filterOutput: filterOutput)
-                }
-            //#endif
+            lastRealTimeMessage = output.realTimeMessage
+            
+            filterOutput = output
         }
         
         
-        guard var packets_ = packets else { return }
+        guard var packets_ = packets else { return filterOutput }
 
         // Midi Thru
         
@@ -252,6 +252,8 @@ public final class MidiConnection: MidiOutletsConnection, Codable, ObservableObj
             eventsTap(events)
             }
         }
+        
+        return filterOutput
     }
     
     // Send MidiEvents ( No filtering )
