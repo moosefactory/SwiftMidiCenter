@@ -156,7 +156,8 @@ public class MidiClient: ObservableObject {
         let inputPort = try InputPort(client: self, type: type , name: name) { packetList, refCon in
             
 #if DEBUG
-            var out = "[INPUT] '\(name) - refCon : \(refCon == nil ? "none" : "\(refCon)")"
+            let ref = refCon == nil ? "<nil>" : "\(refCon!)"
+            let out = "[INPUT] '\(name) - refCon : \(refCon == nil ? "none" : "\(ref)")"
             print(out)
 #endif
             if let receiveBlock = self.customReceiveBlock {
