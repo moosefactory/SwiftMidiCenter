@@ -79,7 +79,7 @@ public class MidiClient: ObservableObject {
     
     /// A weak reference to the MidiCenter, to update the midi patch bay when setup is changed,
     /// and to determine the reverse path identifier for newly created objects
-    weak var midiCenter: MidiCenter?
+    public private(set) weak var midiCenter: MidiCenter?
     
     // MARK: - Initialisation
     
