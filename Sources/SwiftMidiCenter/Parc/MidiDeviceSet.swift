@@ -12,7 +12,7 @@ import SwiftMIDI
 
 public class MidiDeviceSet: ObservableObject {
     
-    @Published var devices: [MidiDevice]
+    @Published public var devices: [MidiDevice]
     
     public private(set) var external: Bool
     
@@ -40,7 +40,24 @@ public class MidiDeviceSet: ObservableObject {
     
     public var allDevices: [MidiDevice] { devices }
     
+    /// insert(device:)
+    ///
+    /// Inserts a new device in the device set.
+    /// This function is called when a midi configuration change notification of type 'device added' is received.
+    public func insert(device: MidiDevice) {
+        devices.append(device)
+    }
     
+    public func remove(ref: MIDIObjectRef) {
+        devices = devices.filter { $0.ref == ref }
+    }
+    
+    public func rename(ref: MIDIObjectRef, newName: String) {
+        if var device = (devices.first { $0.ref == ref }) {
+            device.name = newName
+        }
+    }
+
     public func indexOfDevice(with uuid: UUID) -> Int? {
         return allDevices.firstIndex(where: { $0.uuid == uuid })
     }

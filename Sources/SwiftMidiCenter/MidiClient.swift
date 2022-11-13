@@ -126,7 +126,11 @@ public class MidiClient: ObservableObject {
         case is SwiftMIDI.Notification.ObjectRemoved:
             let object = (notification as! SwiftMIDI.Notification.ObjectRemoved).object
             midiCenter?.didRemove(object)
-            
+        
+        case is SwiftMIDI.Notification.PropertyChanged:
+            let object = (notification as! SwiftMIDI.Notification.PropertyChanged).object
+            midiCenter?.didChange(object)
+
             /// Last notification, we commit the setup
         case is SwiftMIDI.Notification.SetUpChanged:
             midiCenter?.commitSetUp()

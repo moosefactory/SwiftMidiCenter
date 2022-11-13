@@ -52,6 +52,30 @@ extension SwiftMidiCenter {
     /// A new midi input is  available
     func didAdd(_ object: SwiftMIDI.Notification.Object) {
         let type = object.type.swifty
+        switch type {
+            
+        case .other:
+            break
+        case .device:
+            parc.internalDevices.insert(device: MidiDevice(ref: object.ref))
+//        case .entity:
+//            <#code#>
+//        case .source:
+//            <#code#>
+//        case .destination:
+//            <#code#>
+        case .externalDevice:
+            parc.externalDevices.insert(device: MidiDevice(ref: object.ref))
+//        case .externalEntity:
+//            <#code#>
+//        case .externalSource:
+//            <#code#>
+        case .externalDestination:
+            midiBay.output.insertOutput(ref: object.ref)
+        default:
+            break
+        }
+        
         withBay(for: type) { bay in
             if let outlet = bay.outlet(with: object.ref) {
                 print("Did add outlet \(outlet)")
@@ -65,9 +89,62 @@ extension SwiftMidiCenter {
     
     /// A midi input is not available anymore
     func didRemove(_ object: SwiftMIDI.Notification.Object) {
-        withBay(for: object.type.swifty) { bay in
-            //bay.outlet(with: object.ref)?.available = false
+        let type = object.type.swifty
+        switch type {
+            
+        case .other:
+            break
+        case .device:
+            parc.internalDevices.remove(ref: object.ref)
+        case .entity:
+            break
+        case .source:
+            break
+        case .destination:
+            break
+        case .externalDevice:
+            parc.externalDevices.remove(ref: object.ref)
+        case .externalEntity:
+            break
+        case .externalSource:
+            break
+        case .externalDestination:
+            midiBay.output.removeOutput(ref: object.ref)
+        default:
+            break
         }
+        let out = outputs
+        // Quick and dirty change - Double check
+        midiBay.output.outlets = out
+    }
+    
+    /// A midi input is not available anymore
+    func didChange(_ object: SwiftMIDI.Notification.Property) {
+        let name = object.propertyName
+        let type = object.objectType
+        
+        switch type {
+            
+        case .other:
+            break
+        case .device:
+            parc.internalDevices.rename(ref: object.object, newName: object.object.properties.displayName)
+        case .entity:
+            break
+        case .source:
+            break
+        case .destination:
+            break
+        case .externalDevice:
+            parc.externalDevices.rename(ref: object.object, newName: object.object.properties.displayName)
+        case .externalEntity:
+            break
+        case .externalSource:
+            break
+        case .externalDestination:
+            break
+        }
+        objectWillChange.send()
     }
 
     /// The setup changed notification is the last, we use it to commit our changes.

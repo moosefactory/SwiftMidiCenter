@@ -87,7 +87,7 @@ public class MidiDevice: Codable, MidiObject {
     
     /// The device name in system
     
-    public private(set) var name: String
+    public var name: String
     
     /// The associated CoreMidi enpoint object
     

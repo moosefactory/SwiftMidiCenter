@@ -104,7 +104,7 @@ public class SwiftMidiCenter: ObservableObject {
                     print($0)
                 }
             }
-            try initMidi()
+            try publishMidiBayChange()
             do {
                 let connections = try SwiftMIDI.findMidiThruConnections(owner: "")
                 for connection in connections.enumerated() {

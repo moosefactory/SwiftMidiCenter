@@ -9,6 +9,8 @@ import Foundation
 import CoreMIDI
 import SwiftMIDI
 
+public let studioConfigurationChanged = Notification.Name(rawValue: "com.moosefactory.midiCenter.studioConfigurationChanged")
+
 public final class StudioFile: Codable, ObservableObject {
     
     public struct Notifications {

@@ -30,6 +30,7 @@
 
 import Foundation
 import CoreMIDI
+import SwiftMIDI
 
 /// MidiBay
 ///
@@ -68,25 +69,36 @@ final public class MidiBay: ObservableObject, Codable {
         try container.encode(outlets, forKey: .outlets)
     }
     
+    // MARK: - Edit Outlets
+    
+    public func removeOutput(ref: MIDIObjectRef) {
+        outlets = outlets.filter { $0.ref == ref }
+    }
+    
+    public func insertOutput(ref: MIDIObjectRef) {
+        let name = ref.properties.displayName
+        outlets.append(MidiOutlet(ref: ref, name: name, isInput: false))
+    }
+    
     // MARK: - Access Outlets
     
     public func outlet(for name: String) -> MidiOutlet? {
         return outlets.first { $0.name == name }
     }
-    
+
     public func forEachOutlet(_ closure: (MidiOutlet)->Void) {
         outlets.forEach { closure($0) }
     }
     
-    func outlet(with uuid: UUID) -> MidiOutlet? {
+    public func outlet(with uuid: UUID) -> MidiOutlet? {
         outlets.first(where: {$0.uuid == uuid})
     }
 
-    func outlet(with ref: MIDIObjectRef) -> MidiOutlet? {
+    public func outlet(with ref: MIDIObjectRef) -> MidiOutlet? {
         outlets.first(where: {$0.ref == ref})
     }
 
-    func outlet(withUniqueID uniqueID: Int) -> MidiOutlet? {
+    public func outlet(withUniqueID uniqueID: Int) -> MidiOutlet? {
         outlets.first(where: {$0.uniqueID == uniqueID})
     }
 
