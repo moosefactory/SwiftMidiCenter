@@ -53,7 +53,7 @@ public class MidiDeviceSet: ObservableObject {
     }
     
     public func rename(ref: MIDIObjectRef, newName: String) {
-        if var device = (devices.first { $0.ref == ref }) {
+        if let device = (devices.first { $0.ref == ref }) {
             device.name = newName
         }
     }

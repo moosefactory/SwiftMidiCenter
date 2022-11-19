@@ -110,8 +110,6 @@ extension SwiftMidiCenter {
             break
         case .externalDestination:
             midiBay.output.removeOutput(ref: object.ref)
-        default:
-            break
         }
         let out = outputs
         // Quick and dirty change - Double check
@@ -120,11 +118,8 @@ extension SwiftMidiCenter {
     
     /// A midi input is not available anymore
     func didChange(_ object: SwiftMIDI.Notification.Property) {
-        let name = object.propertyName
         let type = object.objectType
-        
         switch type {
-            
         case .other:
             break
         case .device:
@@ -142,6 +137,8 @@ extension SwiftMidiCenter {
         case .externalSource:
             break
         case .externalDestination:
+            break
+        @unknown default:
             break
         }
         objectWillChange.send()
