@@ -100,9 +100,9 @@ public class SwiftMidiCenter: ObservableObject {
             client = try MidiClient(midiCenter: self, name: "defaultClient") { packetList, refCon in
                 
                 // We capture allevents
-                MidiEventsDecoder().unpackEvents(packetList) {
-                    print($0)
-                }
+//                MidiEventsDecoder().unpackEvents(packetList) {
+//                    print($0)
+//                }
             }
             try publishMidiBayChange()
             do {

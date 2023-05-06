@@ -126,11 +126,11 @@ public class MidiClient: ObservableObject {
         case is SwiftMIDI.Notification.ObjectRemoved:
             let object = (notification as! SwiftMIDI.Notification.ObjectRemoved).object
             midiCenter?.didRemove(object)
-        
+            
         case is SwiftMIDI.Notification.PropertyChanged:
             let object = (notification as! SwiftMIDI.Notification.PropertyChanged).object
             midiCenter?.didChange(object)
-
+            
             /// Last notification, we commit the setup
         case is SwiftMIDI.Notification.SetUpChanged:
             midiCenter?.commitSetUp()
@@ -159,11 +159,6 @@ public class MidiClient: ObservableObject {
         print("[INPUT PORT] Init '\(name)' - type : \(type)")
         let inputPort = try InputPort(client: self, type: type , name: name) { packetList, refCon in
             
-#if DEBUG
-            let ref = refCon == nil ? "<nil>" : "\(refCon!)"
-            let out = "[INPUT] '\(name) - refCon : \(refCon == nil ? "none" : "\(ref)")"
-            print(out)
-#endif
             if let receiveBlock = self.customReceiveBlock {
                 receiveBlock(packetList, refCon)
             }
@@ -174,27 +169,14 @@ public class MidiClient: ObservableObject {
             
             self.connections.forEach { connection in
                 // Only transfer if outlet is set in the connection
-                if connection.sources.contains(cnxRefCon.outlet) {
-                    if connection.destinations.count >= 0 {
-                        let filterOutput: MidiPacketsFilter.Output? = connection.transfer(packetList: packetList)
-#if DEBUG
-                        //out += "\r[INPUT]   > \(connection.name) > "
-                        print("\r[INPUT] \(connection.name) > ")
-                        connection.debugLog(filterOutput: filterOutput)
-#endif
-
-                    }
-                    else {
-#if DEBUG
-                    //out += "\r[INPUT]   > no destinations"
-                    print("\r[INPUT] \(connection.name) > no destinations")
-#endif
-                    }
+                if connection.destinations.count >= 0,
+                   connection.sources.contains(cnxRefCon.outlet) {
+                    connection.transfer(packetList: packetList)
                 }
             }
 #if DEBUG
             //print(out)
-            #endif
+#endif
             //
             
             readBlock(packetList, refCon)
@@ -235,7 +217,7 @@ public class MidiClient: ObservableObject {
             self.usedInputsDidChange(changes: changes)
         }
         connection.outputOutletsDidChange = { connection in
-            //self.client.connectionDidChange(connection: connection)
+        //self.client.connectionDidChange(connection: connection)
         }
         try addConnection(connection, in: port)
         return connection
@@ -263,7 +245,6 @@ public class MidiClient: ObservableObject {
     }
     
     func usedInputsDidChange(changes: MidiWireChangeParams<MidiConnection>) {
-        
         changes.addedInputOutlets.forEach {
             do {
                 try inputPort.connect(identifier: changes.wire.uuid.uuidString, outlet: $0)

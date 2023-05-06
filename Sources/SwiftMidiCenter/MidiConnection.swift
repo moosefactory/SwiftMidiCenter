@@ -198,6 +198,7 @@ public final class MidiConnection: MidiOutletsConnection, Codable, ObservableObj
     // MARK: - Packet transfer
     
     /// Transfer packets from sources to destinations, applying filter
+    @discardableResult
     public func transfer(packetList: UnsafePointer<MIDIPacketList>) -> MidiPacketsFilter.Output? {
         guard !sources.isEmpty && (!destinations.isEmpty || eventsTap != nil)  else {
             return nil
