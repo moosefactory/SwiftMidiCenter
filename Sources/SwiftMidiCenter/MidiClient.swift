@@ -156,7 +156,6 @@ public class MidiClient: ObservableObject {
     public func openInputPortWithPacketsReader(name: String = "mainIn",
                                                type: ConnectionType,
                                                readBlock: @escaping MIDIReadBlock) throws -> InputPort {
-        print("[INPUT PORT] Init '\(name)' - type : \(type)")
         let inputPort = try InputPort(client: self, type: type , name: name) { packetList, refCon in
             
             if let receiveBlock = self.customReceiveBlock {
@@ -174,10 +173,6 @@ public class MidiClient: ObservableObject {
                     connection.transfer(packetList: packetList)
                 }
             }
-#if DEBUG
-            //print(out)
-#endif
-            //
             
             readBlock(packetList, refCon)
         }

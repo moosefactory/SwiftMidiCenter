@@ -96,10 +96,15 @@ public final class MidiConnection: MidiOutletsConnection, Codable, ObservableObj
     /// eventsTap
     ///
     /// If eventsTap closure is set, then packet will be converted to midi objects and passed in the closure
+    
     public var eventsTap: (([MidiEvent])->Void)?
     
     public var ticks: Int = 0
     public var counter: Int { return ticks / 24 }
+    
+    public var lastClockTimestamp: MIDITimeStamp?
+    public var delta: Double = 0
+    public var averageDelta: Double = 0
     
     public var filter: MidiPacketsFilter
     
@@ -238,16 +243,32 @@ public final class MidiConnection: MidiOutletsConnection, Codable, ObservableObj
 
         // Events
         
-        if let eventsTap = self.eventsTap {
+        if let eventsTap = self.eventsTap, packets_.numPackets > 0 {
             eventsQueue.async {
-            let numPackets = packets_.numPackets
-            var p = packets_.packet
+                var p: MIDIPacket = packets_.packet
             var events = [MidiEvent]()
-            for _ in 0..<numPackets {
-                if let type = MidiEventType(rawValue: p.data.0 & 0xF0), type != .realTimeMessage {
-                    let event = MidiEvent(type: type, timestamp: p.timeStamp, channel: p.data.0 & 0x0F, value1: p.data.1, value2: p.data.2)
-                    events.append(event)
+            for _ in 0..<packets_.numPackets {
+                
+                let outStr = p.dataAsIntsString
+                
+                if let type = MidiEventType(rawValue: p.data.0 & 0xF0) {
+                    switch type {
+                    case .realTimeMessage:
+                        let event = MidiEvent(type: type, timestamp: p.timeStamp, channel: p.data.0 & 0x0F, value1: p.data.1, value2: p.data.2)
+                        if let lastClockTimestamp = self.lastClockTimestamp {
+                            self.delta = Double(p.timeStamp - lastClockTimestamp) / 1000000
+                            self.averageDelta = 0.95 * self.averageDelta + 0.05 * self.delta
+                        }
+                        
+                        self.lastClockTimestamp = p.timeStamp
+                        
+                    default:
+                        let event = MidiEvent(type: type, timestamp: p.timeStamp, channel: p.data.0 & 0x0F, value1: p.data.1, value2: p.data.2)
+                        
+                        events.append(event)
+                    }
                 }
+                
                 p = MIDIPacketNext(&p).pointee
             }
             eventsTap(events)
