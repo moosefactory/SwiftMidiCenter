@@ -99,11 +99,8 @@ public class SwiftMidiCenter: ObservableObject {
             // Creates a midi client with a default input port
             client = try MidiClient(midiCenter: self, name: "defaultClient") { packetList, refCon in
                 
-                // We capture allevents
-//                MidiEventsDecoder().unpackEvents(packetList) {
-//                    print($0)
-//                }
             }
+            
             try publishMidiBayChange()
             do {
                 let connections = try SwiftMIDI.findMidiThruConnections(owner: "")
