@@ -204,11 +204,15 @@ public final class MidiConnection: MidiOutletsConnection, Codable, ObservableObj
     
     /// Transfer packets from sources to destinations, applying filter
     @discardableResult
-    public func transfer(packetList: UnsafePointer<MIDIPacketList>) -> MidiPacketsFilter.Output? {
+    public func transfer(packetList: UnsafePointer<MIDIPacketList>,
+                         sourceConnectionIdentifier: Int) -> MidiPacketsFilter.Output? {
         guard !sources.isEmpty && (!destinations.isEmpty || eventsTap != nil)  else {
             return nil
         }
 
+//        if !filterSettings.authorizedSourcesUniqueIDs.contains(sourceConnectionIdentifier) {
+//            return nil
+//        }
         var packets: MIDIPacketList?
         var filterOutput: MidiPacketsFilter.Output? = nil
         

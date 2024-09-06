@@ -169,8 +169,8 @@ public class MidiClient: ObservableObject {
             self.connections.forEach { connection in
                 // Only transfer if outlet is set in the connection
                 if connection.destinations.count >= 0,
-                   connection.sources.contains(cnxRefCon.outlet) {
-                    connection.transfer(packetList: packetList)
+                   let source = connection.sources.first(where: { $0.uniqueID == cnxRefCon.outlet.uniqueID }) {
+                    connection.transfer(packetList: packetList, sourceConnectionIdentifier: source.uniqueID)
                 }
             }
             
