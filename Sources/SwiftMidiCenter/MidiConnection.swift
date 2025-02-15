@@ -253,8 +253,6 @@ public final class MidiConnection: MidiOutletsConnection, Codable, ObservableObj
             var events = [MidiEvent]()
             for _ in 0..<packets_.numPackets {
                 
-                let outStr = p.dataAsIntsString
-                
                 if let type = MidiEventType(rawValue: p.data.0 & 0xF0) {
                     switch type {
                     case .realTimeMessage:
