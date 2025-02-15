@@ -31,7 +31,7 @@
 import Foundation
 import CoreMIDI
 import SwiftMIDI
-import MoofFoundation
+import MFFoundation
 import UniColor
 
 /// Encapsulate a CoreMidi object and gives access to properties

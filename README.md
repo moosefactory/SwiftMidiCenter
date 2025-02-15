@@ -1,6 +1,5 @@
 # SwiftMidiCenter
-
-**WORK IN PROGRESS**
+![Icon](Icon.png)
 
 A Swift Midi manager boilerplate based on [SwiftMidi](https://github.com/moosefactory/SwiftMIDI)
 

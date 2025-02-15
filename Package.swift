@@ -1,4 +1,4 @@
-// swift-tools-version:5.3
+// swift-tools-version: 5.9
 // The swift-tools-version declares the minimum version of Swift required to build this package.
 
 import PackageDescription
@@ -16,9 +16,8 @@ let package = Package(
             targets: ["SwiftMidiCenter"]),
     ],
     dependencies: [
-        // Dependencies declare other packages that this package depends on.
         .package(url: "https://github.com/moosefactory/SwiftMIDI.git", .upToNextMajor(from: "1.0.0")),
-        .package(url: "https://github.com/moosefactory/MoofFoundation.git", .upToNextMajor(from: "1.1.0")),
+        .package(url: "https://github.com/moosefactory/MFFoundation.git", .upToNextMajor(from: "2.0.0")),
         .package(url: "https://github.com/moosefactory/UniColor.git", .upToNextMajor(from: "1.0.0"))
     ],
     targets: [
@@ -26,7 +25,7 @@ let package = Package(
         // Targets can depend on other targets in this package, and on products in packages this package depends on.
         .target(
             name: "SwiftMidiCenter",
-            dependencies: ["SwiftMIDI", "MoofFoundation", "UniColor"]),
+            dependencies: ["SwiftMIDI", "MFFoundation", "UniColor"]),
         .testTarget(
             name: "SwiftMidiCenterTests",
             dependencies: ["SwiftMidiCenter"]),

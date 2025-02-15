@@ -31,6 +31,7 @@
 import Foundation
 import CoreMIDI
 import SwiftMIDI
+import MFFoundation
 
 /// Pass packetList, events, and connection reference
 public typealias MidiEventsReadBlock = (UnsafePointer<MIDIPacketList>, [MidiEvent], UnsafeMutableRawPointer?)->Void
@@ -156,8 +157,9 @@ public class MidiClient: ObservableObject {
     public func openInputPortWithPacketsReader(name: String = "mainIn",
                                                type: ConnectionType,
                                                readBlock: @escaping MIDIReadBlock) throws -> InputPort {
-        print("[INPUT PORT] Init '\(name)' - type : \(type)")
-        let inputPort = try InputPort(client: self, type: type , name: name) { packetList, refCon in
+        let inputPort = try InputPort(client: self,
+                                      type: type ,
+                                      name: name) { packetList, refCon in
             
             if let receiveBlock = self.customReceiveBlock {
                 receiveBlock(packetList, refCon)
@@ -174,10 +176,6 @@ public class MidiClient: ObservableObject {
                     connection.transfer(packetList: packetList)
                 }
             }
-#if DEBUG
-            //print(out)
-#endif
-            //
             
             readBlock(packetList, refCon)
         }
