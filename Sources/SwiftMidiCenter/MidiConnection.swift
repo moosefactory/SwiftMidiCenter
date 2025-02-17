@@ -227,7 +227,6 @@ public final class MidiConnection: MidiOutletsConnection, Codable, ObservableObj
             filterOutput = output
         }
         
-        
         guard var packets_ = packets else { return filterOutput }
 
         // Midi Thru
@@ -249,12 +248,11 @@ public final class MidiConnection: MidiOutletsConnection, Codable, ObservableObj
             var events = [MidiEvent]()
             for _ in 0..<packets_.numPackets {
                 
-                let outStr = p.dataAsIntsString
+               // let outStr = p.dataAsIntsString
                 
                 if let type = MidiEventType(rawValue: p.data.0 & 0xF0) {
                     switch type {
                     case .realTimeMessage:
-                        let event = MidiEvent(type: type, timestamp: p.timeStamp, channel: p.data.0 & 0x0F, value1: p.data.1, value2: p.data.2)
                         if let lastClockTimestamp = self.lastClockTimestamp {
                             self.delta = Double(p.timeStamp - lastClockTimestamp) / 1000000
                             self.averageDelta = 0.95 * self.averageDelta + 0.05 * self.delta
