@@ -173,7 +173,7 @@ public class MidiClient: ObservableObject {
                 // Only transfer if outlet is set in the connection
                 if connection.destinations.count >= 0,
                    let source = connection.sources.first(where: { $0.uniqueID == cnxRefCon.outlet.uniqueID }) {
-                    connection.transfer(packetList: packetList, sourceConnectionIdentifier: source.uniqueID)
+                    connection.transfer(packetList: packetList)
                 }
             }
             
