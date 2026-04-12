@@ -169,15 +169,17 @@ public class MidiClient: ObservableObject {
                 return
             }
             
-            self.connections.forEach { connection in
-                // Only transfer if outlet is set in the connection
-                if connection.destinations.count >= 0,
-                   let source = connection.sources.first(where: { $0.uniqueID == cnxRefCon.outlet.uniqueID }) {
-                    connection.transfer(packetList: packetList, sourceConnectionIdentifier: source.uniqueID)
+            self.connections.filter { $0.enabled && !$0.sources.isEmpty }.forEach { connection in
+                guard let source = connection.sources.first(where: {
+                    $0.uniqueID == cnxRefCon.outlet.uniqueID
+                }) else {
+                    return
                 }
+                //print("🛃 MidiCient - Receive midi events from \(source.name) - size: \(packetList.pointee.numPackets)")
+                connection.transfer(packetList: packetList, sourceConnectionIdentifier: source.uniqueID)
             }
             
-            readBlock(packetList, refCon)
+            //readBlock(packetList, refCon)
         }
         return inputPort
     }
