@@ -33,6 +33,61 @@ import CoreMIDI
 import SwiftMIDI
 import MFFoundation
 
+public struct DualTimestamp: CustomStringConvertible {
+    
+    public let computerTimestamp = clock_gettime_nsec_np(CLOCK_MONOTONIC_RAW); // mach_continusous_time()
+    public let deviceTimestamp: UInt64
+    
+    public var delta: UInt64 {
+        computerTimestamp - deviceTimestamp
+    }
+    
+    public init(deviceTimestamp: UInt64) {
+        self.deviceTimestamp = deviceTimestamp
+    }
+    
+    public var description: String {
+        "System: \(computerTimestamp) Device: \(deviceTimestamp) Delta: \(delta)"
+    }
+}
+
+public class MidiConnectionLogger: MFLogger {
+    
+    internal init(connection: MidiConnection?) {
+        self.connection = connection
+        super.init(domain: "MidiConnection", enabled: true)
+    }
+    
+    weak var connection: MidiConnection?
+    
+    func print(event: MidiEvent, referenceTimestamp: DualTimestamp) {
+        print(string(for: event, referenceTimestamp: referenceTimestamp))
+    }
+    
+    func string(for event: MidiEvent, referenceTimestamp: DualTimestamp) -> String {
+        var dot = "🟤"
+        
+        switch event.type {
+        case .noteOn:
+            dot = "🟢"
+        case .noteOff:
+            dot = "🔴"
+        case .afterTouch, .polyAfterTouch:
+            dot = "🟠"
+        case .control:
+            dot = "🔵"
+        case .pitchBend:
+            dot = "🟣"
+        case .programChange:
+            dot = "🟡"
+        default:
+            break
+        }
+        
+        return "\(dot) \(event.type) >Ch\(event.channel) dataSize:\(event.packet.length) :  \(event.value1),\(event.value2) - \(event.packet.timeStamp) [\(referenceTimestamp)]"
+    }
+}
+
 /// MidiConnection
 ///
 /// An object to represent and store a connection between midi end points.
@@ -40,6 +95,8 @@ import MFFoundation
 /// Connection has a midi filter that makes a lot of work to sort midi packets and extract usefull information
 
 public final class MidiConnection: MidiOutletsConnection, Codable, ObservableObject {
+    
+    lazy var logger = MidiConnectionLogger(connection: self)
     
     public struct ChangeParams {
         var connection: MidiConnection
@@ -98,13 +155,14 @@ public final class MidiConnection: MidiOutletsConnection, Codable, ObservableObj
     ///
     /// If eventsTap closure is set, then packet will be converted to midi objects and passed in the closure
     
-    public var eventsTap: (([MidiEvent])->Void)?
+    public var eventsTap: (([MidiEvent], MidiConnection)->Void)?
     
     public var ticks: Int = 0
     public var counter: Int { return ticks / 24 }
     
-    public var lastRealTimestamp: MIDITimeStamp?
-    public var lastEventTimestamp: MIDITimeStamp?
+    public var lastRealTimestamp: DualTimestamp?
+    public var firstEventTimestamp: DualTimestamp?
+    public var lastEventTimestamp: DualTimestamp?
     public var delta: Double = 0
     public var averageDelta: Double = 0
     
@@ -256,22 +314,25 @@ public final class MidiConnection: MidiOutletsConnection, Codable, ObservableObj
                     if let type = MidiEventType(rawValue: p.data.0 & 0xF0) {
                         switch type {
                         case .realTimeMessage:
+                            // Measure clock variation
                             if let lastRealTimestamp = self.lastRealTimestamp {
-                                self.delta = Double(p.timeStamp - lastRealTimestamp) / 1000000
+                                self.delta = Double(p.timeStamp - lastRealTimestamp.deviceTimestamp) / 1000000
                                 self.averageDelta = 0.9 * self.averageDelta + 0.1 * self.delta
                             }
                             
-                            self.lastRealTimestamp = p.timeStamp
-                            //print(".realTimeMessage : \(p.timeStamp) ( ∆ = \(self.delta.dec3), ~∆ = \(self.averageDelta.dec3)");
+                            self.lastRealTimestamp = DualTimestamp(deviceTimestamp: p.timeStamp)
                         default:
                             let event = MidiEvent(type: type,
                                                   timestamp: p.timeStamp,
                                                   channel: p.data.0 & 0x0F,
                                                   value1: p.data.1,
                                                   value2: p.data.2)
-                            print("\(event.type) >Ch\(event.channel) dataSize:\(p.length) : \(p.timeStamp) ( ∆ = \(self.delta.dec3), ~∆ = \(self.averageDelta.dec3)");
-                            self.lastEventTimestamp = p.timeStamp
-                            
+                            if self.firstEventTimestamp == nil {
+                                self.firstEventTimestamp = DualTimestamp(deviceTimestamp: p.timeStamp)
+                            }
+                            self.lastEventTimestamp = DualTimestamp(deviceTimestamp: p.timeStamp)
+
+                            self.logger.print(event: event, referenceTimestamp: self.firstEventTimestamp!)
                             events.append(event)
                         }
                     }
@@ -279,7 +340,7 @@ public final class MidiConnection: MidiOutletsConnection, Codable, ObservableObj
                     p = MIDIPacketNext(&p).pointee
                 }
                 if !events.isEmpty {
-                    eventsTap(events)
+                    eventsTap(events, self)
                 }
             }
         }
