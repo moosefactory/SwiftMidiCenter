@@ -169,7 +169,10 @@ public class MidiClient: ObservableObject {
                 return
             }
             
-            self.connections.filter { $0.enabled && !$0.sources.isEmpty }.forEach { connection in
+            self.connections
+            // Removes disabled and unwired connections
+            .filter { $0.enabled && !$0.sources.isEmpty }
+            .forEach { connection in
                 guard let source = connection.sources.first(where: {
                     $0.uniqueID == cnxRefCon.outlet.uniqueID
                 }) else {

@@ -35,7 +35,8 @@ import MFFoundation
 
 public struct DualTimestamp: CustomStringConvertible {
     
-    public let computerTimestamp = clock_gettime_nsec_np(CLOCK_MONOTONIC_RAW); // mach_continusous_time()
+    public let computerTimestamp = clock_gettime_nsec_np(CLOCK_UPTIME_RAW); // mach_absolute_time()
+    //clock_gettime_nsec_np(CLOCK_MONOTONIC_RAW); // mach_continusous_time()
     public let deviceTimestamp: UInt64
     
     public var delta: UInt64 {
@@ -53,9 +54,9 @@ public struct DualTimestamp: CustomStringConvertible {
 
 public class MidiConnectionLogger: MFLogger {
     
-    internal init(connection: MidiConnection?) {
+    internal init(connection: MidiConnection?, enabled: Bool) {
         self.connection = connection
-        super.init(domain: "MidiConnection", enabled: true)
+        super.init(domain: "MidiConnection", enabled: enabled)
     }
     
     weak var connection: MidiConnection?
@@ -65,26 +66,8 @@ public class MidiConnectionLogger: MFLogger {
     }
     
     func string(for event: MidiEvent, referenceTimestamp: DualTimestamp) -> String {
-        var dot = "🟤"
         
-        switch event.type {
-        case .noteOn:
-            dot = "🟢"
-        case .noteOff:
-            dot = "🔴"
-        case .afterTouch, .polyAfterTouch:
-            dot = "🟠"
-        case .control:
-            dot = "🔵"
-        case .pitchBend:
-            dot = "🟣"
-        case .programChange:
-            dot = "🟡"
-        default:
-            break
-        }
-        
-        return "\(dot) \(event.type) >Ch\(event.channel) dataSize:\(event.packet.length) :  \(event.value1),\(event.value2) - \(event.packet.timeStamp) [\(referenceTimestamp)]"
+        return "\(event.emojiDot) \(event.type) >Ch\(event.channel) dataSize:\(event.packet.length) :  \(event.value1),\(event.value2) - TS: \(event.packet.timeStamp) [\(referenceTimestamp)]"
     }
 }
 
@@ -96,7 +79,7 @@ public class MidiConnectionLogger: MFLogger {
 
 public final class MidiConnection: MidiOutletsConnection, Codable, ObservableObject {
     
-    lazy var logger = MidiConnectionLogger(connection: self)
+    lazy var logger = MidiConnectionLogger(connection: self, enabled: false)
     
     public struct ChangeParams {
         var connection: MidiConnection
@@ -149,14 +132,16 @@ public final class MidiConnection: MidiOutletsConnection, Codable, ObservableObj
     
     @Published public var midiThru: Bool = true
     
-    lazy var eventsQueue = DispatchQueue(label: "com.moosefactory.midicenter.midievents.\(uuid.uuidString.prefix(4))", qos: .userInteractive, attributes: [], autoreleaseFrequency: .inherit, target: nil)
-    
+    lazy var eventsQueue = DispatchQueue(label: "com.moosefactory.midicenter.midievents.input.\(uuid.uuidString.prefix(4))", qos: .userInteractive, attributes: [], autoreleaseFrequency: .inherit, target: nil)
+    lazy var transferQueue = DispatchQueue(label: "com.moosefactory.midicenter.midievents.transfer\(uuid.uuidString.prefix(4))", qos: .userInteractive, attributes: [], autoreleaseFrequency: .inherit, target: nil)
+
     /// eventsTap
     ///
     /// If eventsTap closure is set, then packet will be converted to midi objects and passed in the closure
     
     public var eventsTap: (([MidiEvent], MidiConnection)->Void)?
-    
+    public var shortPacketsTap: ((ShortMidiPacketBuffer, MidiConnection)->Void)?
+
     public var ticks: Int = 0
     public var counter: Int { return ticks / 24 }
     
@@ -260,12 +245,18 @@ public final class MidiConnection: MidiOutletsConnection, Codable, ObservableObj
         })
     }
     
+    lazy var shortMidiPacketBuffer = ShortMidiPacketBuffer()
+    
+    var useEvents = false
     // MARK: - Packet transfer
     
     /// Transfer packets from sources to destinations, applying filter
     @discardableResult
     public func transfer(packetList: UnsafePointer<MIDIPacketList>,
                          sourceConnectionIdentifier: Int) -> MidiPacketsFilter.Output? {
+        
+        let buffer = self.shortMidiPacketBuffer
+        buffer.clear()
         guard !sources.isEmpty && (!destinations.isEmpty || eventsTap != nil)  else {
             return nil
         }
@@ -304,43 +295,76 @@ public final class MidiConnection: MidiOutletsConnection, Codable, ObservableObj
         // Events
         
         if let eventsTap = self.eventsTap, packets_.numPackets > 0 {
-            eventsQueue.async {
+            eventsQueue.async { [weak self] in
+                
+                guard let s = self else { return }
                 var p: MIDIPacket = packets_.packet
-                var events = [MidiEvent]()
-                for _ in 0..<min(packets_.numPackets, 256) {
-                    
-                    // let outStr = p.dataAsIntsString
-                    
-                    if let type = MidiEventType(rawValue: p.data.0 & 0xF0) {
-                        switch type {
-                        case .realTimeMessage:
-                            // Measure clock variation
-                            if let lastRealTimestamp = self.lastRealTimestamp {
-                                self.delta = Double(p.timeStamp - lastRealTimestamp.deviceTimestamp) / 1000000
-                                self.averageDelta = 0.9 * self.averageDelta + 0.1 * self.delta
+                
+                if !s.useEvents {
+                    for _ in 0..<min(packets_.numPackets, 256) {
+                        
+                        if let type = MidiEventType(rawValue: p.data.0 & 0xF0) {
+                            switch type {
+                                
+                            case .realTimeMessage:
+                                // Measure clock variation
+                                if let lastRealTimestamp = s.lastRealTimestamp, p.timeStamp > 0 {
+                                    s.delta = Double(p.timeStamp - lastRealTimestamp.deviceTimestamp) / 1000000
+                                    s.averageDelta = 0.9 * s.averageDelta + 0.1 * s.delta
+                                }
+                                
+                                s.lastRealTimestamp = DualTimestamp(deviceTimestamp: p.timeStamp)
+                                
+                            default:
+                                if s.firstEventTimestamp == nil {
+                                    s.firstEventTimestamp = DualTimestamp(deviceTimestamp: p.timeStamp)
+                                }
+                                s.lastEventTimestamp = DualTimestamp(deviceTimestamp: p.timeStamp)
+                                buffer.add(packet: p)
                             }
-                            
-                            self.lastRealTimestamp = DualTimestamp(deviceTimestamp: p.timeStamp)
-                        default:
-                            let event = MidiEvent(type: type,
-                                                  timestamp: p.timeStamp,
-                                                  channel: p.data.0 & 0x0F,
-                                                  value1: p.data.1,
-                                                  value2: p.data.2)
-                            if self.firstEventTimestamp == nil {
-                                self.firstEventTimestamp = DualTimestamp(deviceTimestamp: p.timeStamp)
-                            }
-                            self.lastEventTimestamp = DualTimestamp(deviceTimestamp: p.timeStamp)
+                        }
 
-                            self.logger.print(event: event, referenceTimestamp: self.firstEventTimestamp!)
-                            events.append(event)
+                        p = MIDIPacketNext(&p).pointee
+                    }
+                    s.shortPacketsTap?(buffer, s)
+                } else {
+                    var events = [MidiEvent]()
+                    
+                    for _ in 0..<min(packets_.numPackets, 256) {
+                        
+                        if let type = MidiEventType(rawValue: p.data.0 & 0xF0) {
+                            switch type {
+                                
+                            case .realTimeMessage:
+                                // Measure clock variation
+                                if let lastRealTimestamp = s.lastRealTimestamp, p.timeStamp > 0 {
+                                    s.delta = Double(p.timeStamp - lastRealTimestamp.deviceTimestamp) / 1000000
+                                    s.averageDelta = 0.9 * s.averageDelta + 0.1 * s.delta
+                                }
+                                
+                                s.lastRealTimestamp = DualTimestamp(deviceTimestamp: p.timeStamp)
+                                
+                            default:
+                                let event = MidiEvent(type: type,
+                                                      timestamp: p.timeStamp,
+                                                      channel: p.data.0 & 0x0F,
+                                                      value1: p.data.1,
+                                                      value2: p.data.2)
+                                if s.firstEventTimestamp == nil {
+                                    s.firstEventTimestamp = DualTimestamp(deviceTimestamp: p.timeStamp)
+                                }
+                                s.lastEventTimestamp = DualTimestamp(deviceTimestamp: p.timeStamp)
+                                events.append(event)
+                            }
+                        }
+                        
+                        p = MIDIPacketNext(&p).pointee
+                    }
+                    s.transferQueue.async {
+                        if !events.isEmpty {
+                            eventsTap(events, s)
                         }
                     }
-                    
-                    p = MIDIPacketNext(&p).pointee
-                }
-                if !events.isEmpty {
-                    eventsTap(events, self)
                 }
             }
         }
@@ -360,7 +384,6 @@ public final class MidiConnection: MidiOutletsConnection, Codable, ObservableObj
             }
         }
     }
-    
 }
 
 
