@@ -161,11 +161,11 @@ public class MidiOutlet: Codable, MidiObject {
 extension MidiOutlet: Hashable {
     
     public static func == (lhs: MidiOutlet, rhs: MidiOutlet) -> Bool {
-        return lhs.uuid == rhs.uuid
+        return lhs.uniqueID == rhs.uniqueID
     }
     
     public func hash(into hasher: inout Hasher) {
-        hasher.combine(uuid)
+        hasher.combine(uniqueID)
     }
 }
 
@@ -177,7 +177,7 @@ extension MidiOutlet: CustomStringConvertible {
     
     public var description: String {
         let avail = available ? "Available" : "Not Available"
-        let shortUUID = String(uuid.uuidString.prefix(8))
-        return "\r\(ioString) Outlet '\(name)'\r    \(shortUUID)… id: \(uniqueID) - ref:\(ref)\r    display:'\(_displayName ?? "")' - \(avail) - Connection: \(connectionID)"
+//        let shortUUID = String(uuid.uuidString.prefix(8))
+        return "\r\(ioString) Outlet '\(name)'\rid: \(uniqueID) - ref:\(ref)\r    display:'\(_displayName ?? "")' - \(avail) - Connection: \(connectionID)"
     }
 }

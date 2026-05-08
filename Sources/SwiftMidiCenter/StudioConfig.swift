@@ -59,24 +59,24 @@ public final class StudioFile: Codable, ObservableObject {
         }
     }
     
-    @Published public var usedOutputUUIDs: [UUID] {
+    @Published public var usedOutputUUIDs: [Int] {
         didSet {
             NotificationCenter.default.post(name: Notifications.changed, object: self, userInfo: [Keys.usedOutputs: usedOutputs])
         }
     }
     
-    @Published public var usedInputUUIDs: [UUID] {
+    @Published public var usedInputUUIDs: [Int] {
         didSet {
             NotificationCenter.default.post(name: Notifications.changed, object: self, userInfo: [Keys.usedOutputs: usedOutputs])
         }
     }
 
     public var usedInputs: [MidiOutlet] {
-        return usedInputUUIDs.compactMap { midiPatchbay.input.outlet(with: $0) }
+        return usedInputUUIDs.compactMap { midiPatchbay.input.outlet(withUniqueID: $0) }
     }
     
     public var usedOutputs: [MidiOutlet] {
-        return usedOutputUUIDs.compactMap { midiPatchbay.output.outlet(with: $0) }
+        return usedOutputUUIDs.compactMap { midiPatchbay.output.outlet(withUniqueID: $0) }
     }
     
     // MARK: - JSON Keys
@@ -98,8 +98,8 @@ public final class StudioFile: Codable, ObservableObject {
         self.midiPatchbay = midiCenter.midiBay
         self.entities = midiCenter.entities
         self.clockDestinations = [MidiOutlet]()
-        self.usedInputUUIDs = midiCenter.deviceConnections.connections.values.compactMap { $0.outlet?.uuid }
-        self.usedOutputUUIDs = midiCenter.deviceConnections.connections.values.compactMap { $0.outlet?.uuid }
+        self.usedInputUUIDs = midiCenter.deviceConnections.connections.values.compactMap { $0.outlet?.uniqueID }
+        self.usedOutputUUIDs = midiCenter.deviceConnections.connections.values.compactMap { $0.outlet?.uniqueID }
     }
     
     // MARK: - JSON Encoding/Decoding
@@ -114,8 +114,8 @@ public final class StudioFile: Codable, ObservableObject {
         entities = (try? values.decode([MidiEntity].self, forKey: .entities)) ?? []
         clockSource = (try? values.decode(MidiOutlet.self, forKey: .clockSource))
         clockDestinations = (try? values.decode([MidiOutlet].self, forKey: .clockDestinations)) ?? []
-        usedInputUUIDs = (try? values.decode([UUID].self, forKey: .usedInputUUIDs)) ?? []
-        usedOutputUUIDs = (try? values.decode([UUID].self, forKey: .usedOutputUUIDs)) ?? []
+        usedInputUUIDs = (try? values.decode([Int].self, forKey: .usedInputUUIDs)) ?? []
+        usedOutputUUIDs = (try? values.decode([Int].self, forKey: .usedOutputUUIDs)) ?? []
     }
     
     public func encode(to encoder: Encoder) throws {

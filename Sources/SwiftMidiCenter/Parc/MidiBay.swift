@@ -90,9 +90,9 @@ final public class MidiBay: ObservableObject, Codable {
         outlets.forEach { closure($0) }
     }
     
-    public func outlet(with uuid: UUID) -> MidiOutlet? {
-        outlets.first(where: {$0.uuid == uuid})
-    }
+//    public func outlet(with uuid: Int) -> MidiOutlet? {
+//        outlets.first(where: {$0.uuid == uuid})
+//    }
 
     public func outlet(with ref: MIDIObjectRef) -> MidiOutlet? {
         outlets.first(where: {$0.ref == ref})

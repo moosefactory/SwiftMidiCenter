@@ -68,8 +68,8 @@ extension MidiOutletsConnection {
 
 extension MidiOutletsConnection {
 
-    public var sourceIdentifiers: Set<UUID> {
-        get { Set(sources.map { $0.uuid }) }
+    public var sourceIdentifiers: Set<Int> {
+        get { Set(sources.map { $0.uniqueID }) }
         set {
             var sources = [MidiOutlet]()
             var addedSources = [MidiOutlet]()
@@ -94,8 +94,8 @@ extension MidiOutletsConnection {
         }
     }
 
-    public var destinationIdentifiers: Set<UUID> {
-        get { Set(destinations.map { $0.uuid }) }
+    public var destinationIdentifiers: Set<Int> {
+        get { Set(destinations.map { $0.uniqueID }) }
         set {
             var destinations = [MidiOutlet]()
             var addedDestinations = [MidiOutlet]()
@@ -129,7 +129,7 @@ extension MidiOutletsConnection {
             var addedSources = [MidiOutlet]()
             var removedSources = [MidiOutlet]()
             newValue.forEach { uniqueID in
-                if let outlet = MidiCenter.shared.input(withUniqueID: uniqueID) {
+                if let outlet = MidiCenter.shared.input(with: uniqueID) {
                     sources.append(outlet)
                     if !self.sources.contains(outlet) {
                         addedSources.append(outlet)
@@ -156,7 +156,7 @@ extension MidiOutletsConnection {
             var removedDestinations = [MidiOutlet]()
 
             newValue.forEach { id in
-                if let outlet = MidiCenter.shared.output(withUniqueID: id) {
+                if let outlet = MidiCenter.shared.output(with: id) {
                     destinations.append(outlet)
                     if !self.destinations.contains(outlet) {
                         addedDestinations.append(outlet)

@@ -157,19 +157,11 @@ public class SwiftMidiCenter: ObservableObject {
 
 extension SwiftMidiCenter {
     
-    func input(with uuid: UUID) -> MidiOutlet? {
-        midiBay.input.outlet(with: uuid)
-    }
-    
-    func input(withUniqueID id: Int) -> MidiOutlet? {
+    func input(with id: Int) -> MidiOutlet? {
         midiBay.input.outlet(withUniqueID: id)
     }
 
-    func output(with uuid: UUID) -> MidiOutlet? {
-        midiBay.output.outlet(with: uuid)
-    }
-
-    func output(withUniqueID id: Int) -> MidiOutlet? {
+    func output(with id: Int) -> MidiOutlet? {
         midiBay.output.outlet(withUniqueID: id)
     }
 }
